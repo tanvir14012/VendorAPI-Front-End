@@ -1,0 +1,617 @@
+<div class="flex flex-col flex-auto min-w-0">
+
+    <!-- Header -->
+    <div
+        class="flex flex-col sm:flex-row flex-0 sm:items-center sm:justify-between p-6 sm:py-8 sm:px-10 border-b bg-card dark:bg-transparent">
+        <div class="flex-1 min-w-0">
+
+            <!-- Title -->
+            <div class="mt-2">
+                <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate">
+                    Account Setup
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-auto p-6 sm:p-10">
+
+        <div class="max-w-3xl">
+
+            <!-- Stepper -->
+            <div class="mb-8 text-3xl">Submit legal documents, get verified and add billing information</div>
+
+
+            <div class="p-4 bg-card shadow rounded overflow-hidden">
+                <mat-stepper [orientation]="stepperOrientation" linear #stepper>
+                    <mat-step [stepControl]="legalDocumentForm" [completed]="true">
+                        <form [formGroup]="legalDocumentForm" class="mt-4">
+                            <ng-template matStepLabel>Document upload</ng-template>
+                            <!-- ID type -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Type of government issued ID</mat-label>
+                                <mat-select [formControlName]="'identityDocType'">
+                                    <mat-option value="1">National ID Card</mat-option>
+                                    <mat-option value="2">Passport</mat-option>
+                                    <mat-option value="3">Driver's Lincense</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <!-- ID no. -->
+                            <mat-form-field class="w-full">
+                                <mat-label>ID number</mat-label>
+                                <input matInput type="text" [formControlName]="'identityNumber'">
+                                <mat-error *ngIf="legalDocumentForm.get('identityNumber').hasError('required')">
+                                    ID number is required
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- ID picture -->
+                            <mat-form-field class="w-full">
+                                <mat-label>ID picture</mat-label>
+                                <input type="text" matInput [formControlName]="'identityDocFileName'"
+                                [placeholder]="'Choose an image'" [errorStateMatcher]="IDInputErrorMatcher" readonly>
+                                
+                                <div matSuffix>
+                                    <input id="image-file-input"
+                                        class="absolute h-0 w-0 opacity-0 invisible pointer-events-none" type="file"
+                                        [multiple]="false"
+                                        [accept]="'.jpg, .jpeg, .png, .tiff, .gif'"
+                                        (change)="uploadID(imageFileInput.files)" #imageFileInput>
+                                    <label
+                                        class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20 dark:hover:bg-black dark:hover:bg-opacity-5"
+                                        for="image-file-input" matRipple>
+                                        <mat-icon [svgIcon]="'heroicons_outline:photograph'"></mat-icon>
+                                    </label>
+                                </div>
+                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('required')">
+                                    ID picture is required
+                                </mat-error>
+                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('notAllowed')">
+                                    Allowed file extensions are [.jpg, .jpeg, .png, .gif, .tiff]
+                                </mat-error>
+                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('fileSizeLimitExceeded')">
+                                    The ID picture file size should not exceed 5 MB
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Business name -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Legal business name</mat-label>
+                                <input matInput type="text" [formControlName]="'businessName'">
+                                <mat-error *ngIf="legalDocumentForm.get('businessName').hasError('required')">
+                                    Business name is required
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Address 1 -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Address line 1</mat-label>
+                                <input matInput type="text" [formControlName]="'businessAddress1'">
+                                <mat-error *ngIf="legalDocumentForm.get('businessAddress1').hasError('required')">
+                                    Address line 1 is required
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Address 2 -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Address line 2</mat-label>
+                                <input matInput type="text" [formControlName]="'businessAddress2'">
+                                <mat-error *ngIf="legalDocumentForm.get('businessAddress2').hasError('required')">
+                                    Address line 2 is required
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Country, state-->
+                            <div class="flex flex-col sm:flex-row">
+                                <mat-form-field class="mr-2 w-full">
+                                    <mat-label>Country</mat-label>
+                                    <mat-select [formControlName]="'country'" [compareWith]="compareCountries"
+                                        (selectionChange)="countryChange($event.value)">
+                                        <mat-option *ngFor="let country of countryList" [value]="country">
+                                            {{country.name}}</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <mat-form-field class="w-full">
+                                    <mat-label>State</mat-label>
+                                    <input matInput type="text" [formControlName]="'state'">
+                                    <mat-error *ngIf="legalDocumentForm.get('state').hasError('required')">
+                                        State is required
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+
+                            <!-- City, zip -->
+                            <div class="flex flex-col sm:flex-row">
+                                <mat-form-field class="mr-2 w-full">
+                                    <mat-label>City</mat-label>
+                                    <input matInput type="text" [formControlName]="'city'">
+                                    <mat-error *ngIf="legalDocumentForm.get('city').hasError('required')">
+                                        City is required
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field class="w-full">
+                                    <mat-label>Zip</mat-label>
+                                    <input matInput type="text" [formControlName]="'zip'">
+                                    <mat-error *ngIf="legalDocumentForm.get('zip').hasError('required')">
+                                        Zip is required
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+
+                            <!-- Phone -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Business phone number</mat-label>
+                                <input matInput type="tel" [formControlName]="'phoneNumber'">
+                                <span matPrefix>{{phonePrefix}}</span>
+                                <mat-error *ngIf="legalDocumentForm.get('phoneNumber').hasError('required')">
+                                    Business phone number is required
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Website -->
+                            <mat-form-field class="w-full">
+                                <mat-label>Business website</mat-label>
+                                <input matInput type="text" [formControlName]="'website'">
+                                <span matPrefix>https://</span>
+                                <mat-error *ngIf="legalDocumentForm.get('website').hasError('required')">
+                                    Business website is required
+                                </mat-error>
+                            </mat-form-field>
+
+                            <!-- Company document -->
+                            <div>
+                                <mat-label>Company documents</mat-label>
+                                <div class="text-sm pt-2">We accept text, pdf, word and excel files. The following documents are accepted: </div>
+                                <mat-list class="mb-10 pt-0">
+                                    <mat-list-item class="text-sm h-auto" role="listitem">
+                                        <mat-icon mat-list-icon>keyboard_arrow_right</mat-icon> License document
+                                    </mat-list-item>
+                                    <mat-list-item class="text-sm h-auto" role="listitem">
+                                        <mat-icon mat-list-icon>keyboard_arrow_right</mat-icon> Certificate of
+                                        formation/incorporation
+                                    </mat-list-item>
+                                    <mat-list-item class="text-sm h-auto" role="listitem">
+                                        <mat-icon mat-list-icon>keyboard_arrow_right</mat-icon> Tax/VAT registration
+                                        certificate
+                                    </mat-list-item>
+                                </mat-list>
+                            </div>
+                            <div >
+                                <div class="mb-2">
+                                    <mat-label>Upload document</mat-label>
+                                </div>
+                                <ng-container *ngFor="let doc of legalDocumentForm.get('legalDocs')['controls']; let idx = index;
+                                     let first = first; let last = last; trackBy: trackByFn">
+                                    <div class="flex">
+                                        <mat-form-field class="w-full">
+                                            <input type="text" matInput [errorStateMatcher]="documentInputErrorMatcher" [formControl]="doc.get('fileName')"
+                                            [placeholder]="'Choose a file'" readonly>
+                                            <div matSuffix>
+                                                <input id="document-file-input-{{idx}}"
+                                                    class="absolute h-0 w-0 opacity-0 invisible pointer-events-none"
+                                                    type="file" [multiple]="false"
+                                                    [accept]="'.txt, .rtf, .pdf, .doc, .docx, .xls, .xlsx'"
+                                                    (change)="uploadDocument($event.target.files, doc)">
+                                                <label
+                                                    class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20 dark:hover:bg-black dark:hover:bg-opacity-5"
+                                                    for="document-file-input-{{idx}}" matRipple>
+                                                    <mat-icon [svgIcon]="'heroicons_outline:paper-clip'"></mat-icon>
+                                                </label>
+                                            </div>
+                                            <mat-error *ngIf="doc.get('fileName').hasError('required')">
+                                                A valid file is required
+                                            </mat-error>
+                                            <mat-error *ngIf="doc.hasError('minlength')">
+                                                At least one file is required
+                                            </mat-error>
+                                            <mat-error *ngIf="doc.hasError('maxlength')">
+                                                At most three files are allowed
+                                            </mat-error>
+                                            <mat-error
+                                                *ngIf="doc.get('fileName').hasError('notAllowed')">
+                                                Allowed file extensions are [.txt, .rtf, .pdf, .doc, .docx, .xls, .xlsx]
+                                            </mat-error>
+                                            <mat-error *ngIf="doc.get('fileName').hasError('fileSizeLimitExceeded')">
+                                                The file size should not exceed 10 MB
+                                            </mat-error>
+                                        </mat-form-field>
+                                        
+                                        <!-- Remove document -->
+                                        <ng-container *ngIf="!(first && last)">
+                                            <div class="flex items-center w-10 pl-2 -mt-4">
+                                                <button class="w-8 h-8 min-h-8" mat-icon-button
+                                                    (click)="removeFileInputField(idx)" matTooltip="Remove">
+                                                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:trash'">
+                                                    </mat-icon>
+                                                </button>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                </ng-container>
+                            </div>
+                            <div>
+                                <mat-hint *ngIf="legalDocumentForm.get('legalDocs')['controls'].length === MAX_DOC_COUNT">You can only upload a maximum of {{MAX_DOC_COUNT}} files</mat-hint>
+                            </div>
+                            <div class="group inline-flex items-center my-2 -ml-4 py-2 px-4 rounded cursor-pointer"
+                                (click)="addFileInputField()">
+                                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:plus-circle'"></mat-icon>
+                                <span class="ml-2 font-medium text-secondary group-hover:underline">Add a
+                                    document</span>
+                            </div>
+                            <div>
+                                <button mat-raised-button (click)="onDocSubmit()" matStepperNext>Next</button>
+                            </div>
+                        </form>
+                    </mat-step>
+
+                    <mat-step [completed]="true">
+                        <ng-template matStepLabel>Approval</ng-template>
+                        <p class="my-4">Your documents will be reviewed by our team and will be approved/rejected. It may take upto three business days. You will be notified in email.</p>
+                        <fuse-card class="flex flex-col px-8 py-6 pb-4 my-2">
+                            <div class="text-lg font-bold">Success</div>
+                            <div class="mt-2">
+                                Congratulations! Your documents have been verified successfully.
+                            </div>
+                        </fuse-card>  
+                        
+                        <fuse-card class="flex flex-col px-8 py-6 pb-4 my-2" #fuseCard>
+                        <div class="text-lg font-bold text-warn">Warning</div>
+                        <div class="mt-2">
+                            We weren’t able to verify your identity due to the quality of your photo.
+                            Please take another photo of you holding your official ID, and make sure it’s from our list of supported documents.
+                        </div>
+                        <div class="mt-3 -mx-3">
+                            <button
+                                class="px-3"
+                                mat-button
+                                [color]="'primary'"
+                                (click)="fuseCard.expanded = !fuseCard.expanded">
+                                <span class="mr-1">Details</span>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    *ngIf="!fuseCard.expanded"
+                                    [svgIcon]="'heroicons_solid:chevron-down'"></mat-icon>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    *ngIf="fuseCard.expanded"
+                                    [svgIcon]="'heroicons_solid:chevron-up'"></mat-icon>
+                            </button>
+                        </div>
+                    
+                        <!-- Expansion -->
+                        <ng-container fuseCardExpansion>
+                            <div class="my-2">
+                                <mat-list role="list">
+                                    <mat-list-item role="listitem">
+                                        <mat-icon svgIcon="heroicons_outline:duplicate" mat-list-icon></mat-icon>
+                                        <div mat-line>Make sure the photo is clear and sharp</div>
+                                        <div mat-line>Good lighting</div>
+                                        <div mat-line>Make sure the ID isn’t cut off and your full ID is in the frame</div>
+                                    </mat-list-item>
+                                  </mat-list>
+                            </div>
+                        </ng-container>
+                    </fuse-card>                        
+                        <div>
+                            <button mat-raised-button matStepperNext>Next</button>
+                        </div>
+                    </mat-step>
+
+                    <mat-step [completed] = "true">
+                        <ng-template matStepLabel>Plan and billing</ng-template>
+                        <div class="w-full max-w-3xl">
+
+                            <!-- Form -->
+                            <form [formGroup]="planBillingForm">
+                        
+                                <!-- Section -->
+                                <div class="w-full">
+                                    <div class="text-xl">Choose your plan</div>
+                                    <div class="text-secondary">You will be billed in a cycle.</div>
+                                </div>
+                                <div class="grid sm:grid-cols-3 gap-6 w-full">
+                                    <!-- Plan -->
+                                    <div class="sm:col-span-3">
+                                    </div>
+                                    <mat-radio-group
+                                        class="invisible absolute w-0 h-0 pointer-events-none"
+                                        [formControlName]="'plan'"
+                                        #planRadioGroup="matRadioGroup">
+                                        <ng-container *ngFor="let plan of plans; trackBy: trackByFn">
+                                            <mat-radio-button [value]="plan.value"></mat-radio-button>
+                                        </ng-container>
+                                    </mat-radio-group>
+                                    
+                                    <div class="sm:col-span-3 flex flex-col items-center">
+                                        <!-- Recurring selector -->
+                                        <div class="flex items-center p-0.5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                                            <button
+                                                type="button"
+                                                class="px-2"
+                                                [ngClass]="{'bg-card pointer-events-none shadow': yearlyBilling,
+                                                            'bg-transparent': !yearlyBilling}"
+                                                mat-flat-button
+                                                (click)="yearlyBilling = true"
+                                                disableRipple>
+                                                Yearly
+                                            </button>
+                                            <button
+                                                class="px-2"
+                                                type="button"
+                                                [ngClass]="{'bg-card pointer-events-none shadow': !yearlyBilling,
+                                                            'bg-transparent': yearlyBilling}"
+                                                mat-flat-button
+                                                (click)="yearlyBilling = false"
+                                                disableRipple>
+                                                Monthly
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                <!-- Cards -->
+                                <div class="sm:col-span-3 flex justify-center mt-5 sm:mt-10">
+                                    <div class="w-full max-w-sm md:max-w-7xl">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 lg:gap-y-0 md:gap-x-6">
+                                            <ng-container *ngFor="let plan of plans; trackBy: trackByFn">
+                                                <fuse-card
+                                                  [ngClass]="{'ring-2 ring-primary': planRadioGroup.value === plan.value, 'overflow-visible': plan.value === 'premium'}"
+                                                  (click)="planRadioGroup.value = plan.value"
+                                                  class="flex-col max-w-sm md:max-w-none p-6 sm:py-12 sm:px-10 cursor-pointer">
+                                                  <ng-container *ngIf="planRadioGroup.value === plan.value">
+                                                    <mat-icon
+                                                        class="absolute top-0 right-0 mt-3 mr-3 icon-size-7 text-primary"
+                                                        [svgIcon]="'heroicons_solid:check-circle'"></mat-icon>
+                                                    </ng-container>
+                                                    <div *ngIf="plan.value === 'premium'" class="absolute inset-x-0 -top-4 flex items-center justify-center">
+                                                        <div class="flex items-center h-8 px-8 rounded-full font-medium text-center leading-none bg-primary text-on-primary">POPULAR</div>
+                                                    </div>
+                                                    <div class="text-2xl sm:text-4xl font-bold tracking-tight leading-tight">{{plan.label}}</div>
+                                                    <div class="mt-2 text-lg font-medium tracking-tight text-secondary h-auto lg:h-36">{{plan.details}}</div>
+                                                    <div class="w-8 h-1 my-10 rounded bg-accent"></div>
+                                                    <!-- Price -->
+                                                    <div class="flex items-baseline whitespace-nowrap">
+                                                        <div class="mr-2 text-xl">USD</div>
+                                                        <div class="text-3xl font-semibold leading-tight tracking-tight">
+                                                            <ng-container *ngIf="yearlyBilling">${{plan.yearlyPrice}}</ng-container>
+                                                            <ng-container *ngIf="!yearlyBilling">${{plan.monthlyPrice}}</ng-container>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Price details -->
+                                                    <div class="flex flex-col mt-2 text-secondary">
+                                                        <ng-container *ngIf="yearlyBilling">
+                                                            <div>billed yearly</div>
+                                                            <div><b>${{plan.monthlyPrice}}</b> billed monthly</div>
+                                                        </ng-container>
+                                                        <ng-container *ngIf="!yearlyBilling">
+                                                            <div>billed monthly</div>
+                                                            <div><b>${{plan.yearlyPrice}}</b> billed yearly</div>
+                                                        </ng-container>
+                                                    </div>
+                                                    
+                                                    <!-- Features -->
+                                                    <div class="flex flex-col mt-12">
+                                                        <div class="font-semibold">Core features, including:</div>
+                                                        <div class="mt-4 space-y-2">
+                                                            
+                                                            <ng-container *ngFor="let feature of plan.features; trackBy: trackByFn">
+                                                                <div class="flex">
+                                                                    <mat-icon
+                                                                        class="icon-size-5 text-green-600"
+                                                                        [svgIcon]="'heroicons_solid:check'"></mat-icon>
+                                                                    <div class="ml-2 leading-5">{{feature}}</div>
+                                                                </div>
+                                                            </ng-container>
+                                                            
+                                                        </div>
+                                                    </div>
+                                                </fuse-card>
+                                            </ng-container>
+                                           
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                        
+                                <!-- Divider -->
+                                <div class="mt-12 mb-10 border-t"></div>
+                        
+                                <!-- Section -->
+                                <div class="w-full">
+                                    <div class="text-xl">Billing Details</div>
+                                    <div class="text-secondary">Enter your billing information. Make sure to set your location correctly as it could affect your tax rates.</div>
+                                </div>
+                                <div class="grid grid-cols-4 gap-6 w-full mt-8">
+                                    <!-- First name Last Name-->
+                                    <div class="col-span-4">
+                                        <div class="flex flex-col sm:flex-row">
+                                            <mat-form-field class="w-full mr-2">
+                                                <mat-label>First name</mat-label>
+                                                <input matInput type="text" [formControlName]="'firstName'">
+                                                <mat-error *ngIf="planBillingForm.get('firstName').hasError('required')">
+                                                    First name is required
+                                                </mat-error>
+                                            </mat-form-field>
+                                            <mat-form-field class="w-full">
+                                                <mat-label>Last name</mat-label>
+                                                <input matInput type="text" [formControlName]="'lastName'">
+                                                <mat-error *ngIf="planBillingForm.get('lastName').hasError('required')">
+                                                    Last name is required
+                                                </mat-error>
+                                            </mat-form-field>
+                                        </div>
+                                       
+                                    </div>
+
+                                    <!-- Address 1, 2-->
+                                    <div class="col-span-4">
+                                        <div class="flex flex-col sm:flex-row">
+                                            <mat-form-field class="w-full mr-2">
+                                                <mat-label>Address line 1</mat-label>
+                                                <input matInput type="text" [formControlName]="'address1'">
+                                                <mat-error *ngIf="planBillingForm.get('address1').hasError('required')">
+                                                    Address line 1 is required
+                                                </mat-error>
+                                            </mat-form-field>
+                                            <mat-form-field class="w-full">
+                                                <mat-label>Address line 2</mat-label>
+                                                <input matInput type="text" [formControlName]="'address2'">
+                                                <mat-error *ngIf="planBillingForm.get('address2').hasError('required')">
+                                                    Address line 2 is required
+                                                </mat-error>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <!-- Country, state-->
+                                    <div class="col-span-4">
+                                        <div class="flex flex-col sm:flex-row">
+                                            <mat-form-field class="mr-2 w-full">
+                                                <mat-label>Country</mat-label>
+                                                <mat-select [formControlName]="'country'" [compareWith]="compareCountries"
+                                                    (selectionChange)="countryChange2($event.value)">
+                                                    <mat-option *ngFor="let country of countryList" [value]="country">
+                                                        {{country.name}}</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                            <mat-form-field class="w-full">
+                                                <mat-label>State</mat-label>
+                                                <input matInput type="text" [formControlName]="'state'">
+                                                <mat-error *ngIf="planBillingForm.get('state').hasError('required')">
+                                                    State is required
+                                                </mat-error>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <!-- City, Zip, Phone -->
+                                    <div class="col-span-4">
+                                        <div class="flex flex-col sm:flex-row">
+                                            <mat-form-field class="mr-2 w-full mt-2">
+                                                <mat-label>City</mat-label>
+                                                <input matInput type="text" [formControlName]="'city'">
+                                                <mat-error *ngIf="planBillingForm.get('city').hasError('required')">
+                                                    City is required
+                                                </mat-error>
+                                            </mat-form-field>
+
+                                            <mat-form-field class="fuse-mat-no-subscript w-full mr-2 my-2">
+                                                <mat-label>ZIP / Postal code</mat-label>
+                                                <mat-icon
+                                                    class="icon-size-5"
+                                                    [svgIcon]="'heroicons_solid:hashtag'"
+                                                    matPrefix></mat-icon>
+                                                <input matInput [formControlName]="'zip'">
+                                            </mat-form-field>
+
+                                            <mat-form-field class="w-full my-2">
+                                                <mat-label>Phone number</mat-label>
+                                                <input matInput type="tel" [formControlName]="'phoneNumber'">
+                                                <span matPrefix>{{phonePrefix2}}</span>
+                                                <mat-error *ngIf="planBillingForm.get('phoneNumber').hasError('required')">
+                                                    Phone number is required
+                                                </mat-error>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card holder -->
+                                    <div class="col-span-4">
+                                        <mat-form-field class="fuse-mat-no-subscript w-full">
+                                            <mat-label>Card holder</mat-label>
+                                            <mat-icon
+                                                class="icon-size-5"
+                                                [svgIcon]="'heroicons_solid:user'"
+                                                matPrefix></mat-icon>
+                                            <input
+                                                [formControlName]="'cardHolder'"
+                                                matInput>
+                                        </mat-form-field>
+                                    </div>
+                                    <!-- Card number -->
+                                    <div class="col-span-4 sm:col-span-2">
+                                        <mat-form-field class="fuse-mat-no-subscript w-full">
+                                            <mat-label>Card number</mat-label>
+                                            <mat-icon
+                                                class="icon-size-5"
+                                                [svgIcon]="'heroicons_solid:credit-card'"
+                                                matPrefix></mat-icon>
+                                            <input
+                                                [formControlName]="'cardNumber'"
+                                                matInput>
+                                        </mat-form-field>
+                                    </div>
+                                    <!-- Card expiration -->
+                                    <div class="col-span-2 sm:col-span-1">
+                                        <mat-form-field
+                                            class="fuse-mat-no-subscript w-full"
+                                            [floatLabel]="'always'">
+                                            <mat-label>Expiration date</mat-label>
+                                            <mat-icon
+                                                class="icon-size-5"
+                                                [svgIcon]="'heroicons_solid:calendar'"
+                                                matPrefix></mat-icon>
+                                            <input
+                                                [formControlName]="'cardExpiration'"
+                                                [placeholder]="'MM / YY'"
+                                                matInput>
+                                        </mat-form-field>
+                                    </div>
+                                    <!-- Card CVC -->
+                                    <div class="col-span-2 sm:col-span-1">
+                                        <mat-form-field class="fuse-mat-no-subscript w-full">
+                                            <mat-label>CVC / CVC2</mat-label>
+                                            <mat-icon
+                                                class="icon-size-5"
+                                                [svgIcon]="'heroicons_solid:lock-closed'"
+                                                matPrefix></mat-icon>
+                                            <input
+                                                [formControlName]="'cardCVC'"
+                                                matInput>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                        
+                                <!-- Divider -->
+                                <div class="mt-11 mb-10 border-t"></div>
+                        
+                                <!-- Actions -->
+                                <div class="flex items-center justify-end">
+                                    <button
+                                        mat-flat-button
+                                        type="button">
+                                        Cancel
+                                    </button>
+                                    <button
+                                        class="ml-4"
+                                        mat-flat-button
+                                        type="button"
+                                        (click)="onPlanAndBillingSubmit()"
+                                        [color]="'primary'">Save
+                                    </button>
+                                </div>
+                            </form>
+                        
+                        </div>
+                        
+                    </mat-step>
+
+                    <mat-step>
+                        <ng-template matStepLabel>Done</ng-template>
+                        <p class="my-4">Congratulations! Your account has been activated successfully.</p>
+                        <div>
+                            <button [routerLink]="['/']" mat-raised-button>Go home</button>
+                        </div>
+                    </mat-step>
+                </mat-stepper>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,224 @@
+<div class="absolute inset-0 flex flex-col min-w-0 overflow-hidden">
+
+    <mat-drawer-container class="flex-auto h-full bg-card dark:bg-transparent" (backdropClick)="onBackdropClicked()"
+        #matDrawerContainer>
+
+        <!-- Drawer -->
+        <mat-drawer class="w-full md:w-160 dark:bg-gray-900" [mode]="drawerMode" [opened]="false" [position]="'end'"
+            [disableClose]="true" #matDrawer>
+            <router-outlet></router-outlet>
+        </mat-drawer>
+
+        <mat-drawer-content class="flex flex-col">
+
+            <!-- Main -->
+            <div class="flex-auto">
+
+                <!-- Header -->
+                <div class="flex flex-wrap flex-auto justify-between py-8 px-6 md:px-8 border-b">
+
+                    <!-- Title -->
+                    <div>
+                        <div class="text-4xl font-extrabold tracking-tight leading-none">Account approval</div>
+                        <div class="ml-0.5 font-medium text-secondary">
+                            <ng-container *ngIf="accountApprovalCount > 0">
+                                {{accountApprovalCount}}
+                            </ng-container>
+                            {{accountApprovalCount | i18nPlural: {
+                            '=0' : 'No request',
+                            '=1' : 'request',
+                            'other': 'requests'
+                            } }}
+                        </div>
+                    </div>
+
+                    <!-- Main actions -->
+                    <div class="flex justify-end flex-wrap">
+                        <!-- Date filter -->
+                        <div class="hidden md:block ml-auto">
+                            <!-- Dates -->
+                            <div class="flex items-start mt-2">
+                                <div class="flex-auto">
+                                    <mat-form-field appearance="fill" class="w-80">
+                                        <mat-label>Filter by date range</mat-label>
+                                        <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+                                            <input matStartDate formControlName="start" placeholder="Start date"
+                                                #dateRangeStart>
+                                            <input matEndDate formControlName="end" placeholder="End date" #dateRangeEnd
+                                                (dateChange)="dateRangeChange(dateRangeStart, dateRangeEnd);">
+                                        </mat-date-range-input>
+                                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <mat-date-range-picker #picker></mat-date-range-picker>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Filter -->
+                        <div class="hidden md:block ml-6">
+                            <div class="flex items-start mt-2">
+                                <mat-form-field class="flex-auto w-50">
+                                    <mat-label>
+                                        Filter by
+                                    </mat-label>
+                                    <mat-select (selectionChange)="filter($event);" [(ngModel)]="activeFilters"
+                                        #viewChanger="matSelect" multiple #filterBy>
+                                        <mat-select-trigger>
+                                            <span *ngIf="activeFilters[0] === 'showAll'">Show all</span>
+                                            <span *ngIf="activeFilters[0] !== 'showAll'">
+                                                {{activeFilters[0]?.charAt(0)?.toUpperCase()}}{{activeFilters[0]?.slice(1)}}
+                                            </span>
+                                            <span *ngIf="activeFilters.length > 1">
+                                                (+{{activeFilters.length - 1}} {{activeFilters.length === 2 ? 'other': 'others'}})
+                                            </span>
+                                        </mat-select-trigger>
+                                        <mat-option [value]="'showAll'">Show all</mat-option>
+                                        <mat-option [value]="'approved'">Approved</mat-option>
+                                        <mat-option [value]="'pending'">Pending</mat-option>
+                                        <mat-option [value]="'rejected'">Rejected</mat-option>
+                                        <mat-option [value]="'unread'">Unread</mat-option>
+                                        <mat-option [value]="'read'">Read</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+                        </div>
+
+                        <!-- Mobile menu -->
+                        <div class="md:hidden ml-auto">
+                            <button class="" [matMenuTriggerFor]="actionsMenu" mat-icon-button>
+                                <mat-icon [svgIcon]="'heroicons_outline:dots-vertical'"></mat-icon>
+                            </button>
+
+                            <mat-menu #actionsMenu="matMenu">
+                                <div class="flex flex-col">
+                                    <div mat-menu-item class="sm:block md:hidden h-full"
+                                        (click)="$event.stopPropagation()">
+                                        <!-- Dates -->
+                                        <div class="mt-2 w-full">
+                                            <mat-form-field appearance="fill" class="w-full">
+                                                <mat-label>Filter by date range</mat-label>
+                                                <mat-date-range-input [rangePicker]="pickerSm">
+                                                    <input matStartDate placeholder="Start date" #dateRangeStart>
+                                                    <input matEndDate placeholder="End date" #dateRangeEnd
+                                                        (dateChange)="dateRangeChange(dateRangeStart, dateRangeEnd);">
+                                                </mat-date-range-input>
+                                                <mat-datepicker-toggle matSuffix [for]="pickerSm">
+                                                </mat-datepicker-toggle>
+                                                <mat-date-range-picker #pickerSm></mat-date-range-picker>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+                                    <!-- Filter -->
+                                    <div mat-menu-item class="md:hidden sm:block h-full"
+                                        (click)="$event.stopPropagation()">
+                                        <div class="mt-2 w-full">
+                                            <mat-form-field class="flex-auto w-full">
+                                                <mat-label>
+                                                    Filter by
+                                                </mat-label>
+                                                <mat-select (selectionChange)="filter($event);" [(ngModel)]="activeFilters"
+                                                #viewChanger="matSelect" multiple #filterBy>
+                                                <mat-select-trigger>
+                                                    <span *ngIf="activeFilters[0] === 'showAll'">Show all</span>
+                                                    <span *ngIf="activeFilters[0] !== 'showAll'">
+                                                        {{activeFilters[0]?.charAt(0)?.toUpperCase()}}{{activeFilters[0]?.slice(1)}}
+                                                    </span>
+                                                    <span *ngIf="activeFilters.length > 1">
+                                                        (+{{activeFilters.length - 1}} {{activeFilters.length === 2 ? 'other': 'others'}})
+                                                    </span>
+                                                </mat-select-trigger>
+                                                <mat-option [value]="'showAll'">Show all</mat-option>
+                                                <mat-option [value]="'approved'">Approved</mat-option>
+                                                <mat-option [value]="'pending'">Pending</mat-option>
+                                                <mat-option [value]="'rejected'">Rejected</mat-option>
+                                                <mat-option [value]="'unread'">Unread</mat-option>
+                                                <mat-option [value]="'read'">Read</mat-option>
+                                            </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </mat-menu>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- account-approval list -->
+                <div>
+                    <ng-container *ngIf="accountApproval$ | async as accountApprovals">
+                        <ng-container *ngIf="accountApprovals.length; else noAccountApproval">
+                            <ng-container
+                                *ngFor="let accountApproval of accountApprovals; let i = index; trackBy: trackByFn">
+
+                                <!-- accountApproval -->
+                                <a class="z-20 flex items-center px-6 py-4 md:px-8 cursor-pointer border-b w-full"
+                                    [ngClass]="{'hover:bg-gray-100 dark:hover:bg-hover': !selectedAccountApproval || selectedAccountApproval.id !== accountApproval.id,
+                                                'bg-primary-50 dark:bg-hover': selectedAccountApproval && selectedAccountApproval.id === accountApproval.id}"
+                                    [routerLink]="['./', accountApproval.id]">
+                                    <div
+                                        class="flex flex-0 items-center justify-center w-10 h-10 rounded-full overflow-hidden">
+                                        <ng-container>
+                                            <mat-icon
+                                                [svgIcon]="accountApproval?.readStatus === 'unread'? 'mark_email_unread': 'mark_email_read'">
+                                            </mat-icon>
+                                        </ng-container>
+                                    </div>
+                                    <div class="min-w-0 ml-4 w-full">
+                                        <div class="font-medium leading-5 truncate flex justify-between flex-wrap">
+                                            <div class="flex justify-between flex-wrap"
+                                                [ngClass]="{'font-bold': accountApproval?.readStatus === 'unread'}">
+                                                <div class="mr-4 truncate py-1">{{accountApproval.businessName}}</div>
+                                                <div class="mr-4 truncate py-1">{{accountApproval.firstName}}
+                                                    {{accountApproval.lastName}}</div>
+                                            </div>
+                                            <div class="flex justify-start flex-wrap">
+                                                <div class="py-1">
+                                                    <span
+                                                        class="inline-flex items-center font-bold text-xs px-2.5 py-0.5 rounded-full tracking-wide uppercase"
+                                                        [ngClass]="{'bg-red-200 text-red-800 dark:bg-red-600 dark:text-red-50': accountApproval?.status === 'rejected',
+                                                                    'bg-blue-200 text-blue-800 dark:bg-blue-600 dark:text-blue-50': accountApproval?.status === 'pending',
+                                                                    'bg-green-200 text-green-800 dark:bg-green-600 dark:text-green-50': accountApproval?.status === 'approved'}">
+                                                        <span
+                                                            class="leading-relaxed whitespace-nowrap">{{accountApproval?.status}}</span>
+                                                    </span>
+                                                </div>
+
+                                                <!-- Date -->
+                                                <div class="text-sm whitespace-nowrap text-secondary ml-4 py-1"
+                                                    [ngClass]="{'font-bold': accountApproval?.readStatus === 'unread'}">
+                                                    {{accountApproval?.createdDate | date:'LLL dd'}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </ng-container>
+                            <ng-container>
+                                <div>
+                                    <mat-paginator
+                                        class="sm:inset-x-0 border-b sm:border-t sm:border-b-0 z-10 bg-gray-50 dark:bg-transparent"
+                                        [ngClass]="{'pointer-events-none': isLoading}" [length]="pagination.length"
+                                        [pageIndex]="pagination.page" [pageSize]="pagination.size"
+                                        (page)="paginate($event)" [pageSizeOptions]="[5, 10, 25, 100]"
+                                        [showFirstLastButtons]="true">
+                                    </mat-paginator>
+                                </div>
+                            </ng-container>
+                        </ng-container>
+                    </ng-container>
+
+                    <!-- No account-approval -->
+                    <ng-template #noAccountApproval>
+                        <div class="p-8 sm:p-16 border-t text-4xl font-semibold tracking-tight text-center">There is no
+                            request!</div>
+                    </ng-template>
+
+                </div>
+
+            </div>
+
+        </mat-drawer-content>
+
+    </mat-drawer-container>
+
+</div>

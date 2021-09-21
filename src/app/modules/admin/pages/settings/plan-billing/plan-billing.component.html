@@ -1,0 +1,270 @@
+<div class="w-full max-w-3xl">
+
+    <!-- Form -->
+    <form [formGroup]="planBillingForm">
+
+        <!-- Section -->
+        <div class="w-full">
+            <div class="text-xl">Choose your plan</div>
+            <div class="text-secondary">You will be billed on a monthly basis.</div>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-6 w-full mt-8">
+            <!-- Plan -->
+            <div class="sm:col-span-3">
+                <fuse-alert [appearance]="'outline'" [type]="'info'">
+                    Changing the plan will take effect immediately. You will be charged for the rest of the current
+                    month.
+                </fuse-alert>
+            </div>
+            <mat-radio-group class="invisible absolute w-0 h-0 pointer-events-none" [formControlName]="'plan'"
+                #planRadioGroup="matRadioGroup">
+                <ng-container *ngFor="let plan of plans; trackBy: trackByFn">
+                    <mat-radio-button [value]="plan.value"></mat-radio-button>
+                </ng-container>
+            </mat-radio-group>
+
+            <div class="sm:col-span-3 flex flex-col items-center">
+                <!-- Recurring selector -->
+                <div class="flex items-center p-0.5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                    <button type="button" class="px-2" [ngClass]="{'bg-card pointer-events-none shadow': yearlyBilling,
+                                    'bg-transparent': !yearlyBilling}" mat-flat-button (click)="yearlyBilling = true"
+                        disableRipple>
+                        Yearly
+                    </button>
+                    <button class="px-2" type="button" [ngClass]="{'bg-card pointer-events-none shadow': !yearlyBilling,
+                                    'bg-transparent': yearlyBilling}" mat-flat-button (click)="yearlyBilling = false"
+                        disableRipple>
+                        Monthly
+                    </button>
+                </div>
+
+                <!-- Cards -->
+                <div class="sm:col-span-3 flex justify-center mt-5 sm:mt-10">
+                    <div class="w-full max-w-sm md:max-w-7xl">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 lg:gap-y-0 md:gap-x-6 lg:gap-x-4">
+                            <ng-container *ngFor="let plan of plans; trackBy: trackByFn">
+                                <fuse-card
+                                    [ngClass]="{'ring-2 ring-primary': planRadioGroup.value === plan.value, 'overflow-visible': plan.value === 'premium'}"
+                                    (click)="planRadioGroup.value = plan.value"
+                                    class="flex-col max-w-sm md:max-w-none p-6 lg:p-4 lg:pt-6 sm:py-12 sm:px-10 cursor-pointer">
+                                    <ng-container *ngIf="planRadioGroup.value === plan.value">
+                                        <mat-icon
+                                            class="absolute top-0 right-0 mt-3 mr-3 icon-size-7 text-primary"
+                                            [svgIcon]="'heroicons_solid:check-circle'"></mat-icon>
+                                    </ng-container>
+                                    <div *ngIf="plan.value === 'premium'"
+                                        class="absolute inset-x-0 -top-4 flex items-center justify-center">
+                                        <div
+                                            class="flex items-center h-8 px-8 rounded-full font-medium text-center leading-none bg-primary text-on-primary">
+                                            POPULAR</div>
+                                    </div>
+                                    <div class="text-2xl sm:text-4xl lg:text-2xl font-bold tracking-tight leading-tight">
+                                        {{plan.label}}</div>
+                                    <div class="mt-2 text-lg font-medium tracking-tight text-secondary h-auto lg:h-36">
+                                        {{plan.details}}</div>
+                                    <div class="w-8 h-1 my-10 rounded bg-accent"></div>
+                                    <!-- Price -->
+                                    <div class="flex items-baseline whitespace-nowrap">
+                                        <div class="mr-2 text-xl">USD</div>
+                                        <div class="text-3xl font-semibold leading-tight tracking-tight">
+                                            <ng-container *ngIf="yearlyBilling">${{plan.yearlyPrice}}</ng-container>
+                                            <ng-container *ngIf="!yearlyBilling">${{plan.monthlyPrice}}</ng-container>
+                                        </div>
+                                    </div>
+                                    <!-- Price details -->
+                                    <div class="flex flex-col mt-2 text-secondary">
+                                        <ng-container *ngIf="yearlyBilling">
+                                            <div>billed yearly</div>
+                                            <div><b>${{plan.monthlyPrice}}</b> billed monthly</div>
+                                        </ng-container>
+                                        <ng-container *ngIf="!yearlyBilling">
+                                            <div>billed monthly</div>
+                                            <div><b>${{plan.yearlyPrice}}</b> billed yearly</div>
+                                        </ng-container>
+                                    </div>
+
+                                    <!-- Features -->
+                                    <div class="flex flex-col mt-12">
+                                        <div class="font-semibold">Core features, including:</div>
+                                        <div class="mt-4 space-y-2">
+
+                                            <ng-container *ngFor="let feature of plan.features; trackBy: trackByFn">
+                                                <div class="flex">
+                                                    <mat-icon class="icon-size-5 text-green-600"
+                                                        [svgIcon]="'heroicons_solid:check'"></mat-icon>
+                                                    <div class="ml-2 leading-5">{{feature}}</div>
+                                                </div>
+                                            </ng-container>
+
+                                        </div>
+                                    </div>
+                                </fuse-card>
+                            </ng-container>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="mt-12 mb-10 border-t"></div>
+
+        <!-- Section -->
+        <div class="w-full">
+            <div class="text-xl">Billing Details</div>
+            <div class="text-secondary">Enter your billing information. Make sure to set your location correctly as it
+                could affect your tax rates.</div>
+        </div>
+        <div class="grid grid-cols-4 gap-6 w-full mt-8">
+            <!-- First name Last Name-->
+            <div class="col-span-4">
+                <div class="flex flex-col sm:flex-row">
+                    <mat-form-field class="w-full mr-2">
+                        <mat-label>First name</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:user'" matPrefix></mat-icon>
+                        <input matInput type="text" [formControlName]="'firstName'">
+                        <mat-error *ngIf="planBillingForm.get('firstName').hasError('required')">
+                            First name is required
+                        </mat-error>
+                    </mat-form-field>
+                    <mat-form-field class="w-full">
+                        <mat-label>Last name</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:user'" matPrefix></mat-icon>
+                        <input matInput type="text" [formControlName]="'lastName'">
+                        <mat-error *ngIf="planBillingForm.get('lastName').hasError('required')">
+                            Last name is required
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+
+            </div>
+
+            <!-- Address 1, 2-->
+            <div class="col-span-4">
+                <div class="flex flex-col sm:flex-row">
+                    <mat-form-field class="w-full mr-2">
+                        <mat-label>Address line 1</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:location-marker'" matPrefix>
+                        </mat-icon>
+                        <input matInput type="text" [formControlName]="'address1'">
+                        <mat-error *ngIf="planBillingForm.get('address1').hasError('required')">
+                            Address line 1 is required
+                        </mat-error>
+                    </mat-form-field>
+                    <mat-form-field class="w-full">
+                        <mat-label>Address line 2</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:location-marker'" matPrefix>
+                        </mat-icon>
+                        <input matInput type="text" [formControlName]="'address2'">
+                        <mat-error *ngIf="planBillingForm.get('address2').hasError('required')">
+                            Address line 2 is required
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Country, state-->
+            <div class="col-span-4">
+                <div class="flex flex-col sm:flex-row">
+                    <mat-form-field class="mr-2 w-full">
+                        <mat-label>Country</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'flag'" matPrefix></mat-icon>
+                        <mat-select [formControlName]="'country'" [compareWith]="compareCountries"
+                            (selectionChange)="countryChange($event.value)">
+                            <mat-option *ngFor="let country of countryList" [value]="country">
+                                {{country.name}}</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <mat-form-field class="w-full">
+                        <mat-label>State</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'location_city'" matPrefix></mat-icon>
+                        <input matInput type="text" [formControlName]="'state'">
+                        <mat-error *ngIf="planBillingForm.get('state').hasError('required')">
+                            State is required
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- City, Zip, Phone -->
+            <div class="col-span-4">
+                <div class="flex flex-col sm:flex-row">
+                    <mat-form-field class="mr-2 w-full mt-2">
+                        <mat-label>City</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'location_city'" matPrefix></mat-icon>
+                        <input matInput type="text" [formControlName]="'city'">
+                        <mat-error *ngIf="planBillingForm.get('city').hasError('required')">
+                            City is required
+                        </mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field class="fuse-mat-no-subscript w-full mr-2 my-2">
+                        <mat-label>ZIP / Postal code</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:hashtag'" matPrefix></mat-icon>
+                        <input matInput [formControlName]="'zip'">
+                    </mat-form-field>
+
+                    <mat-form-field class="w-full my-2">
+                        <mat-label>Phone number</mat-label>
+                        <input matInput type="tel" [formControlName]="'phoneNumber'">
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:phone'" matPrefix></mat-icon>
+                        <span matPrefix>{{phonePrefix}}</span>
+                        <mat-error *ngIf="planBillingForm.get('phoneNumber').hasError('required')">
+                            Phone number is required
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <!-- Card holder -->
+            <div class="col-span-4">
+                <mat-form-field class="fuse-mat-no-subscript w-full">
+                    <mat-label>Card holder</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:user'" matPrefix></mat-icon>
+                    <input [formControlName]="'cardHolder'" matInput>
+                </mat-form-field>
+            </div>
+            <!-- Card number -->
+            <div class="col-span-4 sm:col-span-2">
+                <mat-form-field class="fuse-mat-no-subscript w-full">
+                    <mat-label>Card number</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:credit-card'" matPrefix></mat-icon>
+                    <input [formControlName]="'cardNumber'" matInput>
+                </mat-form-field>
+            </div>
+            <!-- Card expiration -->
+            <div class="col-span-2 sm:col-span-1">
+                <mat-form-field class="fuse-mat-no-subscript w-full" [floatLabel]="'always'">
+                    <mat-label>Expiration date</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:calendar'" matPrefix></mat-icon>
+                    <input [formControlName]="'cardExpiration'" [placeholder]="'MM / YY'" matInput>
+                </mat-form-field>
+            </div>
+            <!-- Card CVC -->
+            <div class="col-span-2 sm:col-span-1">
+                <mat-form-field class="fuse-mat-no-subscript w-full">
+                    <mat-label>CVC / CVC2</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:lock-closed'" matPrefix></mat-icon>
+                    <input [formControlName]="'cardCVC'" matInput>
+                </mat-form-field>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="mt-11 mb-10 border-t"></div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end">
+            <button mat-flat-button type="button">
+                Cancel
+            </button>
+            <button class="ml-4" mat-flat-button type="button" (click)="onPlanAndBillingSubmit()"
+                [color]="'primary'">Save
+            </button>
+        </div>
+    </form>
+
+
+</div>

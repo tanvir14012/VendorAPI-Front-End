@@ -1,0 +1,1073 @@
+<div class="w-full max-w-3xl">
+
+    <!-- Add team member -->
+    <div class="w-full flex items-center justify-end">
+        <button *ngIf="!editMode" mat-flat-button color="primary" (click)="toggleCreateMode()">
+                <mat-icon
+                    class="icon-size-5 mr-2"
+                    [svgIcon]="!createMode ? 'heroicons_solid:plus-circle': 'heroicons_outline:x-circle'">
+                </mat-icon>
+                <span>{{createMode ? 'Discard': 'Add'}}</span>
+        </button>
+
+        <button *ngIf="editMode" mat-flat-button color="primary" (click)="discardEdit()">
+            <mat-icon
+                class="icon-size-5 mr-2"
+                [svgIcon]="'heroicons_outline:x-circle'">
+            </mat-icon>
+            <span>Discard</span>
+        </button>
+        
+    </div>
+
+
+    <!-- Alert -->
+    <ng-container  *ngIf="!(createMode || editMode)">
+        <fuse-alert
+            class="w-full my-8"
+            *ngIf="showAlert"
+            [appearance]="'outline'"
+            [dismissible]="true"
+            [showIcon]="false"
+            [type]="alert.type"
+            [@shake]="alert.type === 'error'">
+            <div class="text-lg">{{alert.message}}</div>
+        </fuse-alert>
+    </ng-container>
+
+    <!-- Create system user form -->
+    <ng-container *ngIf="createMode">
+        <div class="flex flex-col mt-8 divide-y border-t">
+
+            <!-- Form -->
+            <form [formGroup]="addUserForm" (ngSubmit)="saveUser()" #addUserNgForm="ngForm">
+
+                <!-- Profile Section -->
+                <div class="w-full mt-4">
+                    <div class="text-xl">Avatar</div>
+                    <div class="text-secondary">Choose an avatar for the user.</div>
+                </div>
+                <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+                    <!-- Avatar -->
+                    <div class="sm:col-span-4 mt-16 mb-8 flex flex-col">
+                        <div class="flex flex-auto items-end -mt-16">
+                            <div class="relative flex items-center justify-center w-32 h-32 rounded-full overflow-hidden ring-4 ring-bg-card">
+                                <!-- Upload / Remove avatar -->
+                                <div [ngClass]="avatarEditMode ? 'opacity-50': 'opacity-0'" class="absolute inset-0 bg-black z-10"></div>
+                                <div  *ngIf="avatarEditMode" class="absolute inset-0 flex items-center justify-center z-20">
+                                    <div>
+                                        <input
+                                            id="avatar-file-input"
+                                            class="absolute h-0 w-0 opacity-0 invisible pointer-events-none"
+                                            type="file"
+                                            [multiple]="false"
+                                            [accept]="'image/jpeg, image/png'"
+                                            (change)="processAvatar(avatarFileInput.files)"
+                                            #avatarFileInput>
+                                        <label
+                                            class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-hover"
+                                            for="avatar-file-input"
+                                            matRipple>
+                                            <mat-icon
+                                                class="text-white"
+                                                [svgIcon]="'heroicons_outline:camera'"></mat-icon>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <button
+                                            mat-icon-button
+                                            type="button"
+                                            (click)="removeAvatar()">
+                                            <mat-icon
+                                                class="text-white"
+                                                [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Image/Letter -->
+                                <img
+                                    class="object-cover w-full h-full"
+                                    *ngIf="addUserForm.get('avatarBase64').value"
+                                    [src]="addUserForm.get('avatarBase64').value">
+                                <div
+                                    class="flex items-center justify-center w-full h-full rounded overflow-hidden uppercase text-8xl font-bold leading-none bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                                    *ngIf="!addUserForm.get('avatarBase64').value">
+                                    {{addUserForm.get('firstName').value?.charAt(0)}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <span *ngIf="avatarEditMode && invalidAvatarErr !== null" class="text-red-500">{{invalidAvatarErr}}</span>
+                        </div>
+                        <div class="mt-4">
+                            <button *ngIf="!avatarEditMode" type="button" class="mr-2 pl-5 ml-8" mat-flat-button (click)="avatarEditMode = !avatarEditMode;">
+                                <mat-icon [svgIcon]="'mode_edit'"></mat-icon>
+                            </button>
+                            <button *ngIf="avatarEditMode" class="mr-2 pl-5" mat-flat-button (click)="cancelAvatarChange()">
+                                <mat-icon [svgIcon]="'heroicons_outline:backspace'"></mat-icon>
+                            </button>
+                            <button [disabled]="invalidAvatarErr !== null" *ngIf="avatarEditMode" type="button" mat-flat-button (click)="avatarEditMode = !avatarEditMode">
+                                <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- First name -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>First name</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:user'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'firstName'"
+                                matInput>
+                            <mat-error *ngIf="addUserForm.get('firstName').hasError('required') && 
+                            (addUserForm.get('firstName').touched || addUserForm.get('firstName').dirty || addUserNgForm.submitted)">First name is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('firstName').hasError('maxlength') && 
+                            (addUserForm.get('firstName').dirty || addUserForm.get('firstName').touched)">First name is too big, 
+                            length should be less than twenty-five</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('firstName').hasError('pattern') && 
+                            (addUserForm.get('firstName').touched || addUserForm.get('firstName').dirty)">Please choose a valid name</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Last name -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Last name</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:user'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'lastName'"
+                                matInput>
+                                <mat-error *ngIf="addUserForm.get('lastName').hasError('required') && 
+                                (addUserForm.get('lastName').touched || addUserForm.get('lastName').dirty) || addUserNgForm.submitted">Last name is required</mat-error>
+                                
+                                <mat-error *ngIf="addUserForm.get('lastName').hasError('maxlength') && 
+                                (addUserForm.get('lastName').dirty || addUserForm.get('lastName').touched)">First name is too big, 
+                                length should be less than twenty-five</mat-error>
+                                
+                                <mat-error *ngIf="addUserForm.get('lastName').hasError('pattern') && 
+                                (addUserForm.get('lastName').touched || addUserForm.get('lastName').dirty)">Please choose a valid name</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Title -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Title</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:briefcase'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'jobTitle'"
+                                matInput>
+                           <mat-error *ngIf="addUserForm.get('jobTitle').hasError('required') && 
+                            (addUserForm.get('jobTitle').dirty || addUserForm.get('jobTitle').touched || addUserNgForm.submitted)">Job title is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('jobTitle').hasError('maxlength') && 
+                            (addUserForm.get('jobTitle').dirty || addUserForm.get('jobTitle').touched)">Job title is too big, 
+                            length should be less than fifty</mat-error>     
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Role -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Role</mat-label>
+                            <mat-select
+                                [panelClass]="'w-72 min-w-72 max-w-72 h-auto max-h-none'"
+                                [formControlName]="'role'"
+                                disableOptionCentering
+                                #addUserRoleSelect="matSelect">
+                                <mat-select-trigger class="text-md">
+                                    <span class="ml-1 font-medium">{{getRoleLabel(addUserRoleSelect.value) | titlecase}}</span>
+                                </mat-select-trigger>
+                                <ng-container *ngFor="let role of roles">
+                                    <mat-option
+                                        class="h-auto py-4 leading-none"
+                                        [value]="role.value">
+                                        <div class="font-medium">{{role.label}}</div>
+                                        <div class="mt-1.5 text-sm whitespace-normal leading-normal text-secondary">{{role.description}}</div>
+                                    </mat-option>
+                                </ng-container>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                    
+                    <!-- Address1 -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Address line 1</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'heroicons_outline:location-marker'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'addressLine1'"
+                                matInput>
+                            <mat-error *ngIf="addUserForm.get('addressLine1').hasError('required') && 
+                            (addUserForm.get('addressLine1').dirty || addUserForm.get('addressLine1').touched || addUserNgForm.submitted)">Address line 1 is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('addressLine1').hasError('maxlength') && 
+                            (addUserForm.get('addressLine1').dirty || addUserForm.get('addressLine1').touched)">Address line 1 is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Address2 -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Address line 2</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'heroicons_outline:location-marker'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'addressLine2'"
+                                matInput>
+                            <mat-error *ngIf="addUserForm.get('addressLine2').hasError('required') && 
+                            (addUserForm.get('addressLine2').dirty || addUserForm.get('addressLine2').touched || addUserNgForm.submitted)">Address line 2 is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('addressLine2').hasError('maxlength') && 
+                            (addUserForm.get('addressLine2').dirty || addUserForm.get('addressLine2').touched)">Address line 2 is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Country -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Country</mat-label>
+                            <mat-icon class="icon-size-5" [svgIcon]="'flag'" matPrefix></mat-icon>
+                            <mat-select [formControlName]="'country'" [compareWith]="compareCountries">
+                                <mat-option *ngFor="let country of countryList" [value]="country">
+                                    {{country.name}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- City -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>City</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'location_city'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'city'"
+                                matInput>
+                            <mat-error *ngIf="addUserForm.get('city').hasError('required') && 
+                            (addUserForm.get('city').dirty || addUserForm.get('city').touched || addUserNgForm.submitted)">City is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('addressLine1').hasError('maxlength') && 
+                            (addUserForm.get('city').dirty || addUserForm.get('city').touched)">City name is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- State -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>State</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'location_city'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'state'"
+                                matInput>
+                            <mat-error *ngIf="addUserForm.get('state').hasError('required') && 
+                            (addUserForm.get('state').dirty || addUserForm.get('state').touched || addUserNgForm.submitted)">State is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('addressLine1').hasError('maxlength') && 
+                            (addUserForm.get('state').dirty || addUserForm.get('state').touched)">State name is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Zip -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Zip/Postal code</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'iconsmind:post_mail'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'zip'"
+                                matInput>
+                            <mat-error *ngIf="addUserForm.get('zip').hasError('required') && 
+                            (addUserForm.get('zip').dirty || addUserForm.get('zip').touched || addUserNgForm.submitted)">Zip/Postal code is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('addressLine1').hasError('maxlength') && 
+                            (addUserForm.get('zip').dirty || addUserForm.get('zip').touched)">Code is too big, 
+                            length should be less than twenty</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Email</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:mail'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'email'"
+                                matInput>
+                             <mat-error *ngIf="addUserForm.get('email').hasError('required') && 
+                            (addUserForm.get('email').dirty || addUserForm.get('email').touched || addUserNgForm.submitted)">Email address is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('email').hasError('email') && 
+                            (addUserForm.get('email').dirty || addUserForm.get('email').touched)">A valid email address is required</mat-error>
+                            
+                            <mat-error *ngIf="addUserForm.get('email').hasError('maxlength') && 
+                            (addUserForm.get('email').dirty || addUserForm.get('email').touched)">Email address is too big, 
+                            length should be less than two hundred and fifty-five</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full" [formGroupName]="'phoneNumber'">
+                            <mat-label>Phone number</mat-label>
+                            <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:phone'" matPrefix></mat-icon>
+                            <input [formControlName]="'number'" [errorStateMatcher]="countryAndPhonePrefixErrorStateMatcher" type="tel" matInput>
+                            <mat-select
+                                        class="mr-1.5"
+                                        [formControlName]="'countryCode'"
+                                        matPrefix>
+                                        <mat-select-trigger>
+                                            <span class="flex items-center">
+                                                <span
+                                                    class="hidden sm:flex w-6 h-4 mr-1 overflow-hidden"
+                                                    [style.background]="'url(\'/assets/images/apps/contacts/flags.png\') no-repeat 0 0'"
+                                                    [style.backgroundSize]="'24px 3876px'"
+                                                    [style.backgroundPosition]="getCountryByPhoneCode(addUserForm.get('phoneNumber').get('countryCode').value)?.flagImagePos"></span>
+                                                <span class="sm:mx-0.5 font-medium text-default">{{getCountryByPhoneCode(addUserForm.get('phoneNumber').get('countryCode').value)?.code}}</span>
+                                            </span>
+                                        </mat-select-trigger>
+                                        <ng-container *ngFor="let country of countryList; trackBy: trackByFn">
+                                            <mat-option [value]="country.code">
+                                                <span class="flex items-center">
+                                                    <span
+                                                        class="w-6 h-4 overflow-hidden"
+                                                        [style.background]="'url(\'/assets/images/apps/contacts/flags.png\') no-repeat 0 0'"
+                                                        [style.backgroundSize]="'24px 3876px'"
+                                                        [style.backgroundPosition]="country?.flagImagePos"></span>
+                                                    <span class="ml-2">{{country.name}}</span>
+                                                    <span class="ml-2 font-medium">{{country.code}}</span>
+                                                </span>
+                                            </mat-option>
+                                        </ng-container>
+                            </mat-select>
+
+                            <mat-error *ngIf="addUserForm.hasError('phonePrefixAndCountryMismatch') ">
+                                Phone number prefix must match your country
+                            </mat-error>
+
+                            <mat-error *ngIf="addUserForm.get('phoneNumber').get('number').hasError('required') && 
+                            (addUserForm.get('phoneNumber').get('number').dirty ||
+                             addUserForm.get('phoneNumber').get('number').touched || 
+                             addUserNgForm.submitted)">Phone number is required</mat-error>
+
+                            <mat-error *ngIf="addUserForm.get('phoneNumber').get('number').hasError('maxlength') && 
+                            (addUserForm.get('phoneNumber').get('number').dirty || 
+                            addUserForm.get('phoneNumber').get('number').touched)">Phone number is too big</mat-error>    
+
+                            <mat-error *ngIf="addUserForm.get('phoneNumber').get('number').hasError('minlength') && 
+                            (addUserForm.get('phoneNumber').get('number').dirty || 
+                            addUserForm.get('phoneNumber').get('number').touched)">Phone number is too small</mat-error> 
+                            
+                            <mat-error *ngIf="addUserForm.get('phoneNumber').get('number').hasError('pattern') && 
+                            (addUserForm.get('phoneNumber').get('number').dirty || 
+                            addUserForm.get('phoneNumber').get('number').touched)">Phone number can have digits only</mat-error> 
+                                                        
+                        </mat-form-field>
+                    </div>
+
+                <!-- Password field -->
+                <div class="sm:col-span-2">
+                    <mat-form-field class="w-full">
+                        <mat-label>Password</mat-label>
+                        <input
+                            id="password"
+                            matInput
+                            type="password"
+                            [formControlName]="'password'"
+                            #passwordField>
+                        <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordField.type === 'password' ? passwordField.type = 'text' : passwordField.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                        <mat-hint *ngIf="addUserForm.get('password').invalid">Password should contain a lowercase and a uppercase letter, a digit and a non-alphanumeric character</mat-hint>
+                        <mat-error *ngIf="addUserForm.get('password').hasError('required')
+                            && (addUserForm.get('password').dirty || addUserForm.get('password').touched || addUserNgForm.submitted)">
+                            Password is required
+                        </mat-error>
+                        
+                        <mat-error *ngIf="addUserForm.get('password').hasError('minlength')
+                            && (addUserForm.get('password').dirty || addUserForm.get('password').touched)">
+                            Password length should be at least six
+                        </mat-error>
+                        
+                        <mat-error *ngIf="addUserForm.get('password').hasError('maxlength')
+                            && (addUserForm.get('password').dirty || addUserForm.get('password').touched)">
+                            Password is too big, please choose a length less than sixty-four
+                        </mat-error>
+                        
+                        <mat-error *ngIf="addUserForm.get('password').hasError('pattern')
+                           && (addUserForm.get('password').dirty || addUserForm.get('password').touched)">
+                            Please enter a lowercase and a uppercase letter, a digit and a non-alphanumeric character at least
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+
+                <!-- Password confirm -->
+                <div class="sm:col-span-2">
+                    <mat-form-field class="w-full">
+                        <mat-label>Confirm assword</mat-label>
+                        <input
+                            id="passwordConfirm"
+                            matInput
+                            type="password"
+                            [formControlName]="'passwordConfirm'"
+                            #passwordConfirmField>
+                        <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordConfirmField.type === 'password' ? passwordConfirmField.type = 'text' : passwordConfirmField.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordConfirmField.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordConfirmField.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                        <mat-error>Password and confirm password must match</mat-error>
+                    </mat-form-field>
+                </div>
+                
+                </div>
+
+                <!-- Alert -->
+                <fuse-alert
+                    class="w-full"
+                    *ngIf="showAlert"
+                    [appearance]="'outline'"
+                    [showIcon]="false"
+                    [type]="alert.type"
+                    [@shake]="alert.type === 'error'">
+                    <div class="text-lg">{{alert.message}}</div>
+                </fuse-alert>
+
+                <!-- Divider -->
+                <div class="mt-11 mb-10 border-t"></div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end">
+                    <button
+                        mat-stroked-button
+                        (click)="cancelSave()"
+                        type="button">
+                        Cancel
+                    </button>
+                    <button
+                        class="ml-4"
+                        mat-flat-button
+                        type="submit"
+                        [color]="'primary'">
+                        <span *ngIf="!addUserForm.disabled">Save</span>
+
+                        <mat-progress-spinner
+                        *ngIf="addUserForm.disabled"
+                        [diameter]="24"
+                        [mode]="'indeterminate'">
+                        </mat-progress-spinner>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </ng-container>
+
+    <!-- Edit system user form -->
+    <ng-container *ngIf="editMode">
+        <div class="flex flex-col mt-8 divide-y border-t">
+
+            <!-- Form -->
+            <form [formGroup]="editUserForm" (ngSubmit)="updateUser()" #editUserNgForm="ngForm">
+
+                <!-- Profile avatar Section -->
+                <div class="w-full mt-4">
+                    <div class="text-xl">Avatar</div>
+                    <div class="text-secondary">Choose a new avatar for the user.</div>
+                </div>
+                <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+                    <!-- Avatar -->
+                    <div class="sm:col-span-4 mt-16 mb-8 flex flex-col">
+                        <div class="flex flex-auto items-end -mt-16">
+                            <div class="relative flex items-center justify-center w-32 h-32 rounded-full overflow-hidden ring-4 
+                            ring-bg-card">
+                                <!-- Upload / Remove avatar -->
+                                <div [ngClass]="avatarEditMode ? 'opacity-50': 'opacity-0'" class="absolute inset-0 bg-black z-10"></div>
+                                <div  *ngIf="avatarEditMode" class="absolute inset-0 flex items-center justify-center z-20">
+                                    <div>
+                                        <input
+                                            id="avatar-file-input"
+                                            class="absolute h-0 w-0 opacity-0 invisible pointer-events-none"
+                                            type="file"
+                                            [multiple]="false"
+                                            [accept]="'image/jpeg, image/jpg, image/png'"
+                                            (change)="processAvatar(avatarFileInput2.files)"
+                                            #avatarFileInput2>
+                                        <label
+                                            class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-hover"
+                                            for="avatar-file-input"
+                                            matRipple>
+                                            <mat-icon
+                                                class="text-white"
+                                                [svgIcon]="'heroicons_outline:camera'"></mat-icon>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <button
+                                            mat-icon-button
+                                            type="button"
+                                            (click)="removeAvatar()">
+                                            <mat-icon
+                                                class="text-white"
+                                                [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Image/Letter -->
+                                <img
+                                    class="object-cover w-full h-full"
+                                    *ngIf="editUserForm.get('avatarBase64').value"
+                                    [src]="editUserForm.get('avatarBase64').value">
+                                <div
+                                    class="flex items-center justify-center w-full h-full rounded overflow-hidden uppercase 
+                                    text-8xl font-bold leading-none bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                                    *ngIf="!avatarDataURL">
+                                    {{editUserForm.get('firstName').value?.charAt(0)}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <span *ngIf="avatarEditMode && invalidAvatarErr !== null" class="text-red-500">{{invalidAvatarErr}}</span>
+                        </div>
+                        <div class="mt-4">
+                            <button *ngIf="!avatarEditMode" type="button" class="mr-2 pl-5 ml-8" mat-flat-button (click)="avatarEditMode = !avatarEditMode;">
+                                <mat-icon [svgIcon]="'mode_edit'"></mat-icon>
+                            </button>
+                            <button *ngIf="avatarEditMode" class="mr-2 pl-5" mat-flat-button (click)="cancelAvatarChange()">
+                                <mat-icon [svgIcon]="'heroicons_outline:backspace'"></mat-icon>
+                            </button>
+                            <button [disabled]="invalidAvatarErr !== null" *ngIf="avatarEditMode" type="button" mat-flat-button
+                             (click)="avatarEditMode = !avatarEditMode">
+                                <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- First name -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>First name</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:user'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'firstName'"
+                                matInput>
+                            <mat-error *ngIf="editUserForm.get('firstName').hasError('required') && 
+                            (editUserForm.get('firstName').touched || editUserForm.get('firstName').dirty || editUserNgForm.submitted)">First name is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('firstName').hasError('maxlength') && 
+                            (editUserForm.get('firstName').dirty || editUserForm.get('firstName').touched)">First name is too big, 
+                            length should be less than twenty-five</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('firstName').hasError('pattern') && 
+                            (editUserForm.get('firstName').touched || editUserForm.get('firstName').dirty)">Please choose a valid name</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Last name -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Last name</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:user'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'lastName'"
+                                matInput>
+                                <mat-error *ngIf="editUserForm.get('lastName').hasError('required') && 
+                                (editUserForm.get('lastName').touched || editUserForm.get('lastName').dirty) || editUserNgForm.submitted">Last name is required</mat-error>
+                                
+                                <mat-error *ngIf="editUserForm.get('lastName').hasError('maxlength') && 
+                                (editUserForm.get('lastName').dirty || editUserForm.get('lastName').touched)">First name is too big, 
+                                length should be less than twenty-five</mat-error>
+                                
+                                <mat-error *ngIf="editUserForm.get('lastName').hasError('pattern') && 
+                                (editUserForm.get('lastName').touched || editUserForm.get('lastName').dirty)">Please choose a valid name</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Title -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Title</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:briefcase'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'jobTitle'"
+                                matInput>
+                           <mat-error *ngIf="editUserForm.get('jobTitle').hasError('required') && 
+                            (editUserForm.get('jobTitle').dirty || editUserForm.get('jobTitle').touched || editUserNgForm.submitted)">Job title is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('jobTitle').hasError('maxlength') && 
+                            (editUserForm.get('jobTitle').dirty || editUserForm.get('jobTitle').touched)">Job title is too big, 
+                            length should be less than fifty</mat-error>     
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Role -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full" [disabled]="true">
+                            <mat-label>Role</mat-label>
+                            <mat-select
+                                [panelClass]="'w-72 min-w-72 max-w-72 h-auto max-h-none'"
+                                [formControlName]="'role'"
+                                [disabled]="editUserForm.get('role').value === 0"
+                                disableOptionCentering
+                                #addUserRoleSelect="matSelect">
+                                <mat-select-trigger class="text-md">
+                                    <span class="ml-1 font-medium">{{getRoleLabel(addUserRoleSelect.value) | titlecase}}</span>
+                                </mat-select-trigger>
+                                <ng-container *ngFor="let role of roles">
+                                    <mat-option
+                                        class="h-auto py-4 leading-none"
+                                        [value]="role.value">
+                                        <div class="font-medium">{{role.label}}</div>
+                                        <div class="mt-1.5 text-sm whitespace-normal leading-normal text-secondary">{{role.description}}</div>
+                                    </mat-option>
+                                </ng-container>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+                    
+                    <!-- Address1 -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Address line 1</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'heroicons_outline:location-marker'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'addressLine1'"
+                                matInput>
+                            <mat-error *ngIf="editUserForm.get('addressLine1').hasError('required') && 
+                            (editUserForm.get('addressLine1').dirty || editUserForm.get('addressLine1').touched || editUserNgForm.submitted)">Address line 1 is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('addressLine1').hasError('maxlength') && 
+                            (editUserForm.get('addressLine1').dirty || editUserForm.get('addressLine1').touched)">Address line 1 is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Address2 -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Address line 2</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'heroicons_outline:location-marker'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'addressLine2'"
+                                matInput>
+                            <mat-error *ngIf="editUserForm.get('addressLine2').hasError('required') && 
+                            (editUserForm.get('addressLine2').dirty || editUserForm.get('addressLine2').touched || editUserNgForm.submitted)">Address line 2 is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('addressLine2').hasError('maxlength') && 
+                            (editUserForm.get('addressLine2').dirty || editUserForm.get('addressLine2').touched)">Address line 2 is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Country -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Country</mat-label>
+                            <mat-icon class="icon-size-5" [svgIcon]="'flag'" matPrefix></mat-icon>
+                            <mat-select [formControlName]="'country'" [compareWith]="compareCountries">
+                                <mat-option *ngFor="let country of countryList" [value]="country">
+                                    {{country.name}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- City -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>City</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'location_city'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'city'"
+                                matInput>
+                            <mat-error *ngIf="editUserForm.get('city').hasError('required') && 
+                            (editUserForm.get('city').dirty || editUserForm.get('city').touched || editUserNgForm.submitted)">City is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('addressLine1').hasError('maxlength') && 
+                            (editUserForm.get('city').dirty || editUserForm.get('city').touched)">City name is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- State -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>State</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'location_city'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'state'"
+                                matInput>
+                            <mat-error *ngIf="editUserForm.get('state').hasError('required') && 
+                            (editUserForm.get('state').dirty || editUserForm.get('state').touched || editUserNgForm.submitted)">State is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('addressLine1').hasError('maxlength') && 
+                            (editUserForm.get('state').dirty || editUserForm.get('state').touched)">State name is too big, 
+                            length should be less than fifty</mat-error>
+                        </mat-form-field>
+                    </div>
+                    <!-- Zip -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Zip/Postal code</mat-label>
+                            <mat-icon
+                            class="icon-size-5"
+                            [svgIcon]="'iconsmind:post_mail'"
+                            matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'zip'"
+                                matInput>
+                            <mat-error *ngIf="editUserForm.get('zip').hasError('required') && 
+                            (editUserForm.get('zip').dirty || editUserForm.get('zip').touched || editUserNgForm.submitted)">Zip/Postal code is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('addressLine1').hasError('maxlength') && 
+                            (editUserForm.get('zip').dirty || editUserForm.get('zip').touched)">Code is too big, 
+                            length should be less than twenty</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full">
+                            <mat-label>Email</mat-label>
+                            <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_solid:mail'"
+                                matPrefix></mat-icon>
+                            <input
+                                [formControlName]="'email'"
+                                matInput>
+                             <mat-error *ngIf="editUserForm.get('email').hasError('required') && 
+                            (editUserForm.get('email').dirty || editUserForm.get('email').touched || editUserNgForm.submitted)">Email address is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('email').hasError('email') && 
+                            (editUserForm.get('email').dirty || editUserForm.get('email').touched)">A valid email address is required</mat-error>
+                            
+                            <mat-error *ngIf="editUserForm.get('email').hasError('maxlength') && 
+                            (editUserForm.get('email').dirty || editUserForm.get('email').touched)">Email address is too big, 
+                            length should be less than two hundred and fifty-five</mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="sm:col-span-2">
+                        <mat-form-field class="w-full" [formGroupName]="'phoneNumber'">
+                            <mat-label>Phone number</mat-label>
+                            <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:phone'" matPrefix></mat-icon>
+                            <input [formControlName]="'number'" [errorStateMatcher]="countryAndPhonePrefixErrorStateMatcher" type="tel" matInput>
+                            <mat-select
+                                        class="mr-1.5"
+                                        [formControlName]="'countryCode'"
+                                        matPrefix>
+                                        <mat-select-trigger>
+                                            <span class="flex items-center">
+                                                <span
+                                                    class="hidden sm:flex w-6 h-4 mr-1 overflow-hidden"
+                                                    [style.background]="'url(\'/assets/images/apps/contacts/flags.png\') no-repeat 0 0'"
+                                                    [style.backgroundSize]="'24px 3876px'"
+                                                    [style.backgroundPosition]="getCountryByPhoneCode(editUserForm.get('phoneNumber').get('countryCode').value)?.flagImagePos"></span>
+                                                <span class="sm:mx-0.5 font-medium text-default">{{getCountryByPhoneCode(editUserForm.get('phoneNumber').get('countryCode').value)?.code}}</span>
+                                            </span>
+                                        </mat-select-trigger>
+                                        <ng-container *ngFor="let country of countryList; trackBy: trackByFn">
+                                            <mat-option [value]="country.code">
+                                                <span class="flex items-center">
+                                                    <span
+                                                        class="w-6 h-4 overflow-hidden"
+                                                        [style.background]="'url(\'/assets/images/apps/contacts/flags.png\') no-repeat 0 0'"
+                                                        [style.backgroundSize]="'24px 3876px'"
+                                                        [style.backgroundPosition]="country?.flagImagePos"></span>
+                                                    <span class="ml-2">{{country.name}}</span>
+                                                    <span class="ml-2 font-medium">{{country.code}}</span>
+                                                </span>
+                                            </mat-option>
+                                        </ng-container>
+                            </mat-select>
+
+                            <mat-error *ngIf="editUserForm.hasError('phonePrefixAndCountryMismatch') ">
+                                Phone number prefix must match your country
+                            </mat-error>
+
+                            <mat-error *ngIf="editUserForm.get('phoneNumber').get('number').hasError('required') && 
+                            (editUserForm.get('phoneNumber').get('number').dirty ||
+                             editUserForm.get('phoneNumber').get('number').touched || 
+                             editUserNgForm.submitted)">Phone number is required</mat-error>
+
+                            <mat-error *ngIf="editUserForm.get('phoneNumber').get('number').hasError('maxlength') && 
+                            (editUserForm.get('phoneNumber').get('number').dirty || 
+                            editUserForm.get('phoneNumber').get('number').touched)">Phone number is too big</mat-error>    
+
+                            <mat-error *ngIf="editUserForm.get('phoneNumber').get('number').hasError('minlength') && 
+                            (editUserForm.get('phoneNumber').get('number').dirty || 
+                            editUserForm.get('phoneNumber').get('number').touched)">Phone number is too small</mat-error> 
+                            
+                            <mat-error *ngIf="editUserForm.get('phoneNumber').get('number').hasError('pattern') && 
+                            (editUserForm.get('phoneNumber').get('number').dirty || 
+                            editUserForm.get('phoneNumber').get('number').touched)">Phone number can have digits only</mat-error> 
+                                                        
+                        </mat-form-field>
+                    </div>
+
+                <!-- Password field -->
+                <div class="sm:col-span-2">
+                    <mat-form-field class="w-full">
+                        <mat-label>Password</mat-label>
+                        <input
+                            id="password"
+                            matInput
+                            type="password"
+                            [formControlName]="'password'"
+                            #passwordField>
+                        <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordField.type === 'password' ? passwordField.type = 'text' : passwordField.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                        <mat-hint>Please leave it blank if you do not want to update</mat-hint>
+                        <mat-error *ngIf="editUserForm.get('password').hasError('required')
+                            && (editUserForm.get('password').dirty || editUserForm.get('password').touched || editUserNgForm.submitted)">
+                            Password is required
+                        </mat-error>
+                        
+                        <mat-error *ngIf="editUserForm.get('password').hasError('minlength')
+                            && (editUserForm.get('password').dirty || editUserForm.get('password').touched)">
+                            Password length should be at least six
+                        </mat-error>
+                        
+                        <mat-error *ngIf="editUserForm.get('password').hasError('maxlength')
+                            && (editUserForm.get('password').dirty || editUserForm.get('password').touched)">
+                            Password is too big, please choose a length less than sixty-four
+                        </mat-error>
+                        
+                        <mat-error *ngIf="editUserForm.get('password').hasError('pattern')
+                           && (editUserForm.get('password').dirty || editUserForm.get('password').touched)">
+                            Please enter a lowercase and a uppercase letter, a digit and a non-alphanumeric character at least
+                        </mat-error>
+                    </mat-form-field>
+                </div>
+
+                <!-- Password confirm -->
+                <div class="sm:col-span-2">
+                    <mat-form-field class="w-full">
+                        <mat-label>Confirm password</mat-label>
+                        <input
+                            id="passwordConfirm"
+                            matInput
+                            type="password"
+                            [formControlName]="'passwordConfirm'"
+                            #passwordConfirmField>
+                        <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordConfirmField.type === 'password' ? passwordConfirmField.type = 'text' : passwordConfirmField.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordConfirmField.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordConfirmField.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                        <mat-hint>Please leave it blank if you do not want to update</mat-hint>
+                        <mat-error>Password and confirm password must match</mat-error>
+                    </mat-form-field>
+                </div>
+                
+                </div>
+
+                <!-- Alert -->
+                <fuse-alert
+                    class="w-full"
+                    *ngIf="showAlert"
+                    [appearance]="'outline'"
+                    [showIcon]="false"
+                    [type]="alert.type"
+                    [@shake]="alert.type === 'error'">
+                    <div class="text-lg">{{alert.message}}</div>
+                </fuse-alert>
+
+
+                <!-- Divider -->
+                <div class="mt-11 mb-10 border-t"></div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end">
+                    <button
+                        mat-stroked-button
+                        (click)="cancelUpdate()"
+                        type="button">
+                        Cancel
+                    </button>
+                    <button
+                        class="ml-4"
+                        mat-flat-button
+                        type="submit"
+                        [color]="'primary'">
+                        <span *ngIf="!editUserForm.disabled">Save</span>
+
+                        <mat-progress-spinner
+                        *ngIf="editUserForm.disabled"
+                        [diameter]="24"
+                        [mode]="'indeterminate'">
+                        </mat-progress-spinner>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </ng-container>
+
+    <!-- Team members view -->
+    <ng-container *ngIf="!(createMode || editMode)">
+        <!-- Loding indicator -->
+        <ng-container *ngIf="loading">
+            <div class="flex flex-col mt-8 justify-cente pt-8 items-center border-t">
+                <mat-progress-spinner
+                    [diameter]="24"
+                    [mode]="'indeterminate'">
+                </mat-progress-spinner>
+            </div>
+        </ng-container>
+
+        <div *ngIf="!loading" class="flex flex-col mt-8 divide-y border-t border-b">
+            <ng-container *ngFor="let member of members; let i = index; trackBy: trackByFn;">
+                <div class="flex flex-col sm:flex-row sm:items-center py-6">
+                    <div class="flex items-center">
+                        <div class="flex flex-0 items-center justify-center w-10 h-10 rounded-full overflow-hidden">
+                            <ng-container *ngIf="member.avatarBase64; else noAvatar">
+                                <img
+                                    class="object-cover w-full h-full"
+                                    [src]="member.avatarBase64"
+                                    alt="Contact avatar"/>
+                            </ng-container>
+                            <ng-template #noAvatar>
+                                <div class="flex items-center justify-center w-full h-full rounded-full text-lg uppercase bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                                    {{member.firstName?.charAt(0)}}
+                                </div>
+                            </ng-template>
+                        </div>
+                        <div class="ml-4">
+                            <div class="font-medium">{{member.firstName}} {{member.lastName}}</div>
+                            <div class="text-secondary">{{member.email}}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center mt-4 sm:mt-0 sm:ml-auto">
+                        <div class="order-2 sm:order-1 ml-4 sm:ml-0">
+                            <mat-form-field class="fuse-mat-dense w-50">
+                                <mat-select
+                                    [panelClass]="'w-72 min-w-72 max-w-72 h-auto max-h-none'"
+                                    [(ngModel)]="selectedRoles[member.userId]"
+                                    [disabled]="roleEditInProgress || member.role === 0"
+                                    (selectionChange)="updateRole(member, $event.value)"
+                                    disableOptionCentering
+                                    #roleSelect="matSelect">
+                                    <mat-select-trigger class="text-md">
+                                        <span>Role:</span>
+                                        <span class="ml-1 font-medium">{{getRoleLabel(roleSelect.value) | titlecase}}</span>
+                                    </mat-select-trigger>
+                                    <ng-container *ngFor="let role of roles">
+                                        <mat-option
+                                            class="h-auto py-4 leading-none"
+                                            [value]="role.value">
+                                            <div class="font-medium">{{role.label}}</div>
+                                            <div class="mt-1.5 text-sm whitespace-normal leading-normal text-secondary">{{role.description}}</div>
+                                        </mat-option>
+                                    </ng-container>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                        <div class="order-1 sm:order-2 sm:ml-3">
+                            <button mat-icon-button class="mr-1"
+                                (click)="enableEditMode(member)"
+                                [disabled] = "member.role === 0">
+                                <mat-icon
+                                    class="text-hint"
+                                    
+                                    [svgIcon]="'edit_note'"></mat-icon>
+                            </button>
+                            <button mat-icon-button 
+                                (click)="deleteUser(member.userId)"
+                                [disabled] = "member.role === 0">
+                                <mat-icon
+                                    class="text-hint"
+                                    [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+    </ng-container>
+
+</div>

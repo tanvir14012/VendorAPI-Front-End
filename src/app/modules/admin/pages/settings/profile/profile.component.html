@@ -1,0 +1,362 @@
+<div class="w-full max-w-3xl">
+    
+    <!-- Form -->
+    <form [formGroup]="profileForm" (ngSubmit)="save()"  #profileNgForm="ngForm">
+
+        <!-- Profile Section -->
+        <div class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+            <div class="text-xl">Profile</div>
+            <div class="text-secondary">Update your account profile.</div>
+        </div>
+        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+            <!-- Avatar -->
+            <div class="sm:col-span-4 mt-16 mb-8 flex flex-col">
+                <div class="flex flex-auto items-end -mt-16">
+                    <div class="relative flex items-center justify-center w-32 h-32 rounded-full overflow-hidden ring-4 ring-bg-card">
+                        <!-- Upload / Remove avatar -->
+                        <div [ngClass]="avatarEditMode ? 'opacity-50': 'opacity-0'" class="absolute inset-0 bg-black z-10"></div>
+                        <div  *ngIf="avatarEditMode" class="absolute inset-0 flex items-center justify-center z-20">
+                            <div>
+                                <input
+                                    id="avatar-file-input"
+                                    class="absolute h-0 w-0 opacity-0 invisible pointer-events-none"
+                                    type="file"
+                                    [multiple]="false"
+                                   
+                                    [accept]="'image/jpeg, image/jpg, image/png, image/gif, image/tiff'"
+                                    (change)="processAvatar(avatarFileInput.files)"
+                                    #avatarFileInput>
+                                <label
+                                    class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-hover"
+                                    for="avatar-file-input"
+                                    matRipple>
+                                    <mat-icon
+                                        class="text-white"
+                                        [svgIcon]="'heroicons_outline:camera'"></mat-icon>
+                                </label>
+                            </div>
+                            <div>
+                                <button
+                                    mat-icon-button
+                                    type="button"
+                                    (click)="removeAvatar()">
+                                    <mat-icon
+                                        class="text-white"
+                                        [svgIcon]="'heroicons_outline:trash'"></mat-icon>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ****  -->
+                        <!-- Image Preview -->
+                        <img
+                            class="object-cover w-full h-full"
+                            *ngIf="profileForm.get('avatarBase64').value"
+                            [src]="profileForm.get('avatarBase64').value">
+                        <div
+                            class="flex items-center justify-center w-full h-full rounded overflow-hidden uppercase text-8xl 
+                            font-bold leading-none bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                            *ngIf="!profileForm.get('avatarBase64').value">
+                            {{profileForm.get('firstName').value?.charAt(0)}}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span *ngIf="avatarEditMode && invalidAvatarErr !== null" class="text-red-500">{{invalidAvatarErr}}</span>
+                </div>
+                <div *ngIf="editMode" class="mt-4">
+                    <button *ngIf="!avatarEditMode" type="button" class="mr-2 pl-5" mat-flat-button 
+                    (click)="avatarEditMode = !avatarEditMode;" class="mr-2 pl-5 ml-8">
+                        <mat-icon [svgIcon]="'mode_edit'"></mat-icon>
+                    </button>
+                    <button *ngIf="avatarEditMode" type="button" class="mr-2 pl-5" mat-flat-button (click)="cancelAvatarChange()">
+                        <mat-icon [svgIcon]="'heroicons_outline:backspace'"></mat-icon>
+                    </button>
+                    <button [disabled]="invalidAvatarErr !== null" *ngIf="avatarEditMode" type="button" mat-flat-button 
+                    (click)="avatarEditMode = !avatarEditMode">
+                        <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                    </button>
+                </div>
+            </div>
+            <!-- First name -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>First name</mat-label>
+                    <mat-icon
+                        class="icon-size-5"
+                        [svgIcon]="'heroicons_solid:user'"
+                        matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'firstName'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('firstName').hasError('required') && 
+                    (profileForm.get('firstName').dirty || profileForm.get('firstName').touched || profileNgForm.submitted)">First name is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('firstName').hasError('maxlength') && 
+                    (profileForm.get('firstName').dirty || profileForm.get('firstName').touched)">First name is too big, 
+                    length should be less than twenty-five</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('firstName').hasError('pattern') && 
+                    (profileForm.get('firstName').dirty || profileForm.get('firstName').touched)">Please choose a valid name</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- Last name -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Last name</mat-label>
+                    <mat-icon
+                        class="icon-size-5"
+                        [svgIcon]="'heroicons_solid:user'"
+                        matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'lastName'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('lastName').hasError('required') && 
+                    (profileForm.get('lastName').dirty || profileForm.get('lastName').touched || profileNgForm.submitted)">First name is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('lastName').hasError('maxlength') && 
+                    (profileForm.get('lastName').dirty || profileForm.get('lastName').touched)">First name is too big, 
+                    length should be less than twenty-five</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('lastName').hasError('pattern') && 
+                    (profileForm.get('lastName').dirty || profileForm.get('lastName').touched)">Please choose a valid name</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- Title -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}" >
+                    <mat-label>Job Title</mat-label>
+                    <mat-icon
+                        class="icon-size-5"
+                        [svgIcon]="'heroicons_solid:briefcase'"
+                        matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'jobTitle'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('jobTitle').hasError('required') && 
+                    (profileForm.get('jobTitle').dirty || profileForm.get('jobTitle').touched || profileNgForm.submitted)">Job title is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('jobTitle').hasError('maxlength') && 
+                    (profileForm.get('jobTitle').dirty || profileForm.get('jobTitle').touched)">Job title is too big, 
+                    length should be less than fifty</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- Company -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Company</mat-label>
+                    <mat-icon
+                        class="icon-size-5"
+                        [svgIcon]="'heroicons_solid:office-building'"
+                        matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'company'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('company').hasError('required') && 
+                    (profileForm.get('company').dirty || profileForm.get('company').touched || profileNgForm.submitted)">Company name is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('company').hasError('maxlength') && 
+                    (profileForm.get('company').dirty || profileForm.get('company').touched)">Company name is too big, 
+                    length should be less than fifty</mat-error>
+                </mat-form-field>
+            </div>
+
+            <!-- Address1 -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Address line 1</mat-label>
+                    <mat-icon
+                    class="icon-size-5"
+                    [svgIcon]="'heroicons_outline:location-marker'"
+                    matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'addressLine1'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine1').hasError('required') && 
+                    (profileForm.get('addressLine1').dirty || profileForm.get('addressLine1').touched || profileNgForm.submitted)">Address line 1 is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine1').hasError('maxlength') && 
+                    (profileForm.get('addressLine1').dirty || profileForm.get('addressLine1').touched)">Address line 1 is too big, 
+                    length should be less than fifty</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- Address2 -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Address line 2</mat-label>
+                    <mat-icon
+                    class="icon-size-5"
+                    [svgIcon]="'heroicons_outline:location-marker'"
+                    matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'addressLine2'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine2').hasError('required') && 
+                    (profileForm.get('addressLine2').dirty || profileForm.get('addressLine2').touched || profileNgForm.submitted)">Address line 2 is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine2').hasError('maxlength') && 
+                    (profileForm.get('addressLine2').dirty || profileForm.get('addressLine2').touched)">Address line 2 is too big, 
+                    length should be less than fifty</mat-error>
+                </mat-form-field>
+            </div>
+
+            <!-- City -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>City</mat-label>
+                    <mat-icon
+                    class="icon-size-5"
+                    [svgIcon]="'location_city'"
+                    matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'city'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('city').hasError('required') && 
+                    (profileForm.get('city').dirty || profileForm.get('city').touched || profileNgForm.submitted)">City is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine1').hasError('maxlength') && 
+                    (profileForm.get('city').dirty || profileForm.get('city').touched)">City name is too big, 
+                    length should be less than fifty</mat-error>
+                </mat-form-field>
+            </div>
+
+             <!-- State -->
+             <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>State</mat-label>
+                    <mat-icon
+                    class="icon-size-5"
+                    [svgIcon]="'location_city'"
+                    matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'state'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('state').hasError('required') && 
+                    (profileForm.get('state').dirty || profileForm.get('state').touched || profileNgForm.submitted)">State is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine1').hasError('maxlength') && 
+                    (profileForm.get('state').dirty || profileForm.get('state').touched)">State name is too big, 
+                    length should be less than fifty</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- Zip -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Zip/Postal code</mat-label>
+                    <mat-icon
+                    class="icon-size-5"
+                    [svgIcon]="'iconsmind:post_mail'"
+                    matPrefix></mat-icon>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'zip'"
+                        matInput>
+                    <mat-error *ngIf="editMode && profileForm.get('zip').hasError('required') && 
+                    (profileForm.get('zip').dirty || profileForm.get('zip').touched || profileNgForm.submitted)">Zip/Postal code is required</mat-error>
+                    <mat-error *ngIf="editMode && profileForm.get('addressLine1').hasError('maxlength') && 
+                    (profileForm.get('zip').dirty || profileForm.get('zip').touched)">Code is too big, 
+                    length should be less than twenty</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- Country -->
+            <div class="sm:col-span-2">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Country</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'flag'" matPrefix></mat-icon>
+                    <mat-select *ngIf="editMode" [formControlName]="'country'"
+                     [compareWith]="compareCountries" >
+                        <mat-option *ngFor="let country of countryList" [value]="country">
+                            {{country.name}}</mat-option>
+                    </mat-select>
+
+                    <input *ngIf="!editMode"
+                        [readonly]="'true'"
+                        [value]="getCountryName()"
+                        matInput>
+                </mat-form-field>
+            </div>
+
+            <!-- Website -->
+            <div class="sm:col-span-2" *ngIf="userProfile.userType !== 0 && userProfile.userType !== 1">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Website</mat-label>
+                    <span matPrefix>https://</span>
+                    <input
+                        [readonly]="!editMode"
+                        [formControlName]="'website'"
+                        matInput>
+                </mat-form-field>
+                <mat-error *ngIf="editMode && profileForm.get('website').hasError('maxlength') && 
+                    (profileForm.get('website').dirty || profileForm.get('website').touched)">Website name is too big, 
+                    length should be less than fifty</mat-error>
+            </div>
+
+            <!-- Business model -->
+            <div class="sm:col-span-2" *ngIf="userProfile.userType !== 0 && userProfile.userType !== 1">
+                <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}">
+                    <mat-label>Business model</mat-label>
+                    <mat-icon class="icon-size-5 mr-1" [svgIcon]="'mat_solid:business'"></mat-icon>
+                    <mat-select *ngIf="editMode" [formControlName]="'businessOptionId'">
+                        <mat-option *ngFor="let ops of businessTypeOptions" [value]="ops.id">{{ops.name}}</mat-option>
+                    </mat-select>
+
+                    <input *ngIf="!editMode"
+                        [readonly]="'true'"
+                        [value]="getBusinessTypeOptionName()"
+                        matInput>
+                </mat-form-field>
+            </div>
+           
+        </div>
+
+        <!-- Alert -->
+        <fuse-alert
+            class="my-8"
+            *ngIf="showAlert"
+            [appearance]="'outline'"
+            [showIcon]="false"
+            [type]="alert.type"
+            [@shake]="alert.type === 'error'">
+            <div class="text-lg">{{alert.message}}</div>
+        </fuse-alert>
+
+        <!-- Divider -->
+        <div class="mt-11 mb-10 border-t"></div>
+
+        <!-- Actions -->
+        <ng-container *ngIf="editMode; else viewMode">
+            <div class="flex items-center justify-end">
+                <button
+                    mat-stroked-button
+                    (click)="cancelEditMode()"
+                    type="button">
+                    Cancel
+                </button>
+                <button
+                    class="ml-4"
+                    mat-flat-button
+                    type="submit"
+                    [color]="'primary'">
+
+                    <span *ngIf="!profileForm.disabled">Save</span>
+
+                    <mat-progress-spinner
+                    *ngIf="profileForm.disabled"
+                    [diameter]="24"
+                    [mode]="'indeterminate'">
+                    </mat-progress-spinner>
+                </button>
+            </div>
+        </ng-container>
+        <ng-template #viewMode>
+            <div class="flex items-center justify-end">
+                <button
+                    mat-stroked-button
+                    [color]="'primary'"
+                    (click)="enableEditMode()"
+                    type="button">
+                    Edit
+                </button>
+            </div>
+        </ng-template>
+    </form>
+
+</div>

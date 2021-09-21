@@ -1,0 +1,497 @@
+<div class="w-full max-w-3xl">
+    
+    <div class="w-full">
+        <div class="text-xl">Connections</div>
+        <div class="text-secondary">Configure SMTP settings for email sending, API keys for SMS etc.</div>
+    </div>
+
+     <!-- Section SMTP, SMS -->
+    <div class="mt-4 w-full">
+        <mat-accordion>
+
+            <!-- Email config -->
+            <mat-expansion-panel>
+                <mat-expansion-panel-header [collapsedHeight]="'80px'" [expandedHeight]="'80px'">
+                    <mat-panel-title>
+                      Email
+                    </mat-panel-title>
+                    <mat-panel-description>
+                        <span>Set up SMTP configuration for email sending</span>
+                    </mat-panel-description>
+                  </mat-expansion-panel-header>
+                  
+                  <!-- SMTP config form -->
+                  <form *ngIf="smtpConfigForm" [formGroup]="smtpConfigForm" (ngSubmit)="saveSmtpConfig()" #smtpConfigNgForm="ngForm">
+                    <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+                        <!-- Server -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>Server</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:server'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'server'"
+                                    matInput>
+                                <mat-error *ngIf="smtpConfigForm.get('server').hasError('required')">Server is required</mat-error>
+                                <mat-error *ngIf="smtpConfigForm.get('server').hasError('maxlength')">Server value is too big, maximum length is 200</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Username -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>Username</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:user'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'username'"
+                                    matInput>
+                                <mat-error *ngIf="smtpConfigForm.get('username').hasError('maxlength')">Username value is too big, maximum length is 200</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>Password</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:lock-closed'"
+                                    matPrefix></mat-icon>
+                                <button matSuffix type="button" mat-icon-button (click)="smtpPasswordEyeOn = !smtpPasswordEyeOn;">
+                                    <mat-icon [svgIcon]="smtpPasswordEyeOn ? 'heroicons_outline:eye': 'heroicons_outline:eye-off'"></mat-icon>
+                                </button>
+                                <input
+                                    [type]="smtpPasswordEyeOn? 'password': 'text'"
+                                    [formControlName]="'password'"
+                                    matInput>
+                                <mat-error *ngIf="smtpConfigForm.get('password').hasError('maxlength')">Password value is too big, maximum length is 200</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                         <!-- From name -->
+                         <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Sender name</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:identification'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'fromName'"
+                                    matInput>
+                                <mat-error *ngIf="smtpConfigForm.get('fromName').hasError('required')">Sender name is required</mat-error>
+                                <mat-error *ngIf="smtpConfigForm.get('fromName').hasError('maxlength')">Sender name is too big, maximum length is 100</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- From address -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Sender address</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:mail'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'fromAddress'"
+                                    matInput>
+                                <mat-error *ngIf="smtpConfigForm.get('fromAddress').hasError('required')">Sender address is required</mat-error>
+                                <mat-error *ngIf="smtpConfigForm.get('fromAddress').hasError('maxlength')">Sender address is too big, maximum length is 320</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Port -->
+                        <div class="sm:col-span-1">
+                            <mat-form-field class="w-full">
+                                <mat-label>Port</mat-label>
+                                <mat-select [formControlName]="'port'" [value]="'465'">
+                                    <mat-option [value]="'25'">25</mat-option>
+                                    <mat-option [value]="'465'">465 (SSL)</mat-option>
+                                    <mat-option [value]="'587'">587 (TSL)</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Use authentication -->
+                        <div class="sm:col-span-3 flex items-center justify-between">
+                                <div class="">
+                                    <mat-checkbox class="mr-1" [formControlName]="'useAuthentication'">Use authentication</mat-checkbox>
+                                </div>
+                                
+                                <div class="">
+                                    <mat-checkbox class="mr-1" [formControlName]="'useSecureConnection'">Use secure connection</mat-checkbox>
+                                </div>
+                           
+                        </div>
+
+                        <div *ngIf="smtpConfigEditStatus==='success'" class="sm:col-span-4 mt-4">
+                            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #smtpSaveSuccessAlert>
+                                <span fuseAlertTitle>Success</span>
+                                SMTP configuration for email sending has been saved successfully.
+                            </fuse-alert>
+                         </div>
+                         <div *ngIf="smtpConfigEditStatus==='failed'" class="sm:col-span-4 mt-4">
+                            <fuse-alert [type]="'warning'"  [dismissible]="true" [dismissed]="false" #smtpSaveFailedAlert>
+                                <span fuseAlertTitle>Failed</span>
+                                An error occurred while saving SMTP configuration for email sending. Please try again later.
+                            </fuse-alert>
+                         </div>
+
+                         <!-- Divider -->
+                        <div class="border-t sm:col-span-4"></div>
+                        <!-- Actions -->
+                        <div class="sm:col-span-4 flex items-center justify-end mt-4">
+                            <button mat-stroked-button type="button" (click)="cancelSmtpConfigSave()">
+                                Cancel
+                            </button>
+                            <button class="ml-4" mat-flat-button [color]="'primary'">Save
+                            </button>
+                        </div>
+                    </div>
+                  </form>
+                  
+            </mat-expansion-panel>
+
+             <!-- SMS config -->
+             <mat-expansion-panel>
+                <mat-expansion-panel-header [collapsedHeight]="'80px'" [expandedHeight]="'80px'">
+                    <mat-panel-title>
+                      SMS
+                    </mat-panel-title>
+                    <mat-panel-description>
+                        <span>Set up API configuration for sending SMS</span>
+                    </mat-panel-description>
+                  </mat-expansion-panel-header>
+                  
+                  <!-- SMS config form -->
+                  <form *ngIf="smsConfigForm" [formGroup]="smsConfigForm" (ngSubmit)="saveSmsConfig()" #smsConfigNgForm="ngForm">
+                    <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+                        <!-- Originator -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>Originator</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:server'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'originator'"
+                                    matInput>
+                                    <mat-error *ngIf="smsConfigForm.get('originator').hasError('required')">Originator value is required</mat-error>
+                                <mat-error *ngIf="smsConfigForm.get('originator').hasError('maxlength')">Originator value is too big, maximum length is 200</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- API Access Key -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>API access key</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:lock-closed'"
+                                    matPrefix></mat-icon>
+                                <button matSuffix type="button" mat-icon-button (click)="smsConfigApiKeyEyeOn = !smsConfigApiKeyEyeOn;">
+                                        <mat-icon [svgIcon]="smsConfigApiKeyEyeOn ? 'heroicons_outline:eye': 'heroicons_outline:eye-off'"></mat-icon>
+                                </button>
+                                <input
+                                    [type]="smsConfigApiKeyEyeOn? 'password': 'text'"
+                                    [formControlName]="'apiAccessKey'"
+                                    matInput>
+                                <mat-error *ngIf="smsConfigForm.get('apiAccessKey').hasError('required')">API access key is required</mat-error>
+                                <mat-error *ngIf="smsConfigForm.get('apiAccessKey').hasError('maxlength')">API access key value is too big, maximum length is 500</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Signing Key -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>Signing key</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:lock-closed'"
+                                    matPrefix></mat-icon>
+                                <button matSuffix type="button" mat-icon-button (click)="smsConfigSigningKeyEyeOn = !smsConfigSigningKeyEyeOn;">
+                                    <mat-icon [svgIcon]="smsConfigSigningKeyEyeOn ? 'heroicons_outline:eye': 'heroicons_outline:eye-off'"></mat-icon>
+                                </button>
+                                <input
+                                    [type]="smsConfigSigningKeyEyeOn? 'password': 'text'"
+                                    [formControlName]="'apiSigningKey'"
+                                    matInput>
+                                <mat-error *ngIf="smsConfigForm.get('apiSigningKey').hasError('required')">Signing key is required</mat-error>
+                                <mat-error *ngIf="smsConfigForm.get('apiSigningKey').hasError('maxlength')">Signing key value is too big, maximum length is 500</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        
+
+                        <div *ngIf="smsConfigEditStatus==='success'" class="sm:col-span-4 mt-4">
+                            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #smsSaveSuccessAlert>
+                                <span fuseAlertTitle>Success</span>
+                                 API configuration for SMS has been saved successfully.
+                            </fuse-alert>
+                         </div>
+                         <div *ngIf="smsConfigEditStatus==='failed'" class="sm:col-span-4 mt-4">
+                            <fuse-alert [type]="'warning'"  [dismissible]="true" [dismissed]="false" #smsSaveFailedAlert>
+                                <span fuseAlertTitle>Failed</span>
+                                An error occurred while saving API configuration for SMS sending. Please try again later.
+                            </fuse-alert>
+                         </div>
+
+                         <!-- Divider -->
+                        <div class="border-t sm:col-span-4"></div>
+                        <!-- Actions -->
+                        <div class="sm:col-span-4 flex items-center justify-end mt-4">
+                            <button mat-stroked-button type="button" (click)="cancelSmsConfigSave()">
+                                Cancel
+                            </button>
+                            <button class="ml-4" mat-flat-button [color]="'primary'">Save
+                            </button>
+                        </div>
+                    </div>
+                  </form>
+                  
+            </mat-expansion-panel>
+        </mat-accordion>
+    </div>
+
+     <!-- Section Branding -->
+     <div class="w-full mt-10">
+        <div class="text-xl">Branding</div>
+        <div class="text-secondary">Configure company and branding information.</div>
+    </div>
+
+    <div class="mt-4 w-full">
+        <mat-accordion>
+             <!-- Company config -->
+             <mat-expansion-panel>
+                <mat-expansion-panel-header [collapsedHeight]="'80px'" [expandedHeight]="'80px'">
+                    <mat-panel-title>
+                      Company
+                    </mat-panel-title>
+                    <mat-panel-description>
+                        <span>Set company information</span>
+                    </mat-panel-description>
+                  </mat-expansion-panel-header>
+                  
+                  <!-- Company config form -->
+                  <!-- Form -->
+                  <form *ngIf="companyInfoForm" [formGroup]="companyInfoForm" (ngSubmit)="saveCompanyInfo()" 
+                        #companyInfoNgForm="ngForm">
+
+                    <!-- Logo Section -->
+                    <div class="w-full mt-4">
+                        <div class="text-xl">Logo</div>
+                        <div class="text-secondary">Choose a new logo for the company.</div>
+                    </div>
+                    <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+                        <!-- Logo -->
+                        <div class="sm:col-span-4 mt-16 mb-8 flex flex-col">
+                            <div class="flex flex-auto items-end -mt-16">
+                                <div class="relative flex items-center justify-center w-32 h-32 rounded-full overflow-hidden ring-4 ring-bg-card">
+                                    <!-- Upload / Remove logo -->
+                                    <div [ngClass]="logoEditMode ? 'opacity-50': 'opacity-0'" class="absolute inset-0 bg-black z-10"></div>
+                                    <div  *ngIf="logoEditMode" class="absolute inset-0 flex items-center justify-center z-20">
+                                        <div>
+                                            <input
+                                                id="logo-file-input"
+                                                class="absolute h-0 w-0 opacity-0 invisible pointer-events-none"
+                                                type="file"
+                                                [multiple]="false"
+                                                [accept]="'image/jpeg, image/jpg, image/png, image/gif, image/tiff'"
+                                                (change)="processLogo(logoFileInput.files)"
+                                                #logoFileInput>
+                                            <label
+                                                class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-hover"
+                                                for="logo-file-input"
+                                                matRipple>
+                                                <mat-icon
+                                                    class="text-white"
+                                                    [svgIcon]="'heroicons_outline:camera'"></mat-icon>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Image/Letter -->
+                                    <img
+                                        class="object-cover w-full h-full"
+                                        *ngIf="logoDataURL"
+                                        [src]="logoDataURL">
+                                    <div
+                                        class="flex items-center justify-center w-full h-full rounded overflow-hidden uppercase text-8xl font-bold leading-none bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                                        *ngIf="!logoDataURL">
+                                        {{companyInfoForm.get('name').value?.charAt(0)}}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <span *ngIf="logoEditMode && invalidLogoErr !== null" class="text-red-500">{{invalidLogoErr}}</span>
+                            </div>
+                            <div class="mt-4">
+                                <button *ngIf="!logoEditMode" type="button" class="mr-2 pl-5 ml-8" mat-flat-button (click)="logoEditMode = !logoEditMode;">
+                                    <mat-icon [svgIcon]="'mode_edit'"></mat-icon>
+                                </button>
+                                <button *ngIf="logoEditMode" class="mr-2 pl-5" mat-flat-button (click)="cancelLogoChange()">
+                                    <mat-icon [svgIcon]="'heroicons_outline:backspace'"></mat-icon>
+                                </button>
+                                <button [disabled]="invalidLogoErr !== null" *ngIf="logoEditMode" type="button" mat-flat-button (click)="logoEditMode = !logoEditMode">
+                                    <mat-icon [svgIcon]="'heroicons_outline:check'"></mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Name -->
+                        <div class="sm:col-span-4">
+                            <mat-form-field class="w-full">
+                                <mat-label>Company name</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_outline:office-building'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'name'"
+                                    matInput>
+                                <mat-error *ngIf="companyInfoForm.get('name').hasError('required')">Company name is required</mat-error>
+                                <mat-error *ngIf="companyInfoForm.get('name')
+                                    .hasError('maxlength')">Company name is too big, max length is 100</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        
+                        <!-- Address1 -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Address line 1</mat-label>
+                                <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:location-marker'"
+                                matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'addressLine1'"
+                                    matInput>
+                                <mat-error *ngIf="companyInfoForm.get('addressLine1')
+                                    .hasError('required')">Address line 1 is required</mat-error>
+
+                                <mat-error *ngIf="companyInfoForm.get('addressLine2')
+                                    .hasError('maxlength')">Address line 1 is too big, max length is 50</mat-error>    
+                            </mat-form-field>
+                        </div>
+                        <!-- Address2 -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Address line 2</mat-label>
+                                <mat-icon
+                                class="icon-size-5"
+                                [svgIcon]="'heroicons_outline:location-marker'"
+                                matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'addressLine2'"
+                                    matInput>
+                                <mat-error *ngIf="companyInfoForm.get('addressLine2')
+                                    .hasError('required')">Address line 2 is required</mat-error>
+
+                                <mat-error *ngIf="companyInfoForm.get('addressLine2')
+                                    .hasError('maxlength')">Address line 2 is too big, max length is 50</mat-error>        
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Email</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_solid:mail'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'email'"
+                                    matInput>
+                                <mat-error *ngIf="companyInfoForm.get('email').hasError('required')">Email is required</mat-error>
+                                <mat-error *ngIf="companyInfoForm.get('email').hasError('email')">Email is incorrect</mat-error>
+                                <mat-error *ngIf="companyInfoForm.get('email').hasError('maxlength')">Email is too big</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Email2 -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Email (alternative)</mat-label>
+                                <mat-icon
+                                    class="icon-size-5"
+                                    [svgIcon]="'heroicons_solid:mail'"
+                                    matPrefix></mat-icon>
+                                <input
+                                    [formControlName]="'email2'"
+                                    matInput>
+                                <mat-error *ngIf="companyInfoForm.get('email2').hasError('email')">Email is incorrect</mat-error>
+                                <mat-error *ngIf="companyInfoForm.get('email2').hasError('maxlength')">Email is too big</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Phone number</mat-label>
+                                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:phone'" matPrefix></mat-icon>
+                                <input [formControlName]="'phoneNumber'" type="tel" matInput>
+                                
+                                <mat-error *ngIf="companyInfoForm.get('phoneNumber')
+                                    .hasError('required')">Phone number is required</mat-error>
+                                <mat-error *ngIf="companyInfoForm.get('phoneNumber')
+                                    .hasError('maxlength')">Phone number is too big</mat-error>
+                            </mat-form-field>
+                        </div>
+
+                        <!-- Phone2 -->
+                        <div class="sm:col-span-2">
+                            <mat-form-field class="w-full">
+                                <mat-label>Phone number (alternative)</mat-label>
+                                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:phone'" matPrefix></mat-icon>
+                                <input [formControlName]="'phoneNumber2'" type="tel" matInput>
+
+                                <mat-error *ngIf="companyInfoForm.get('phoneNumber2')
+                                    .hasError('maxlength')">Phone number is too big</mat-error>
+                            </mat-form-field>
+                        </div>
+                    
+                    </div>
+
+                    <div *ngIf="companyInfoEditStatus==='success'" class="sm:col-span-4 mt-4">
+                        <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #companyInfoSaveSuccessAlert>
+                            <span fuseAlertTitle>Success</span>
+                             The company information been saved successfully.
+                        </fuse-alert>
+                     </div>
+                     <div *ngIf="companyInfoEditStatus==='failed'" class="sm:col-span-4 mt-4">
+                        <fuse-alert [type]="'warning'"  [dismissible]="true" [dismissed]="false" #companyInfoSaveFailedAlert>
+                            <span fuseAlertTitle>Failed</span>
+                            An error occurred while saving company information. Please try again later.
+                        </fuse-alert>
+                     </div>
+
+                    <!-- Divider -->
+                    <div class="mt-11 mb-10 border-t"></div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end">
+                        <button
+                            mat-stroked-button
+                            (click)="cancelCompanyInfoSave()"
+                            type="button">
+                            Cancel
+                        </button>
+                        <button
+                            class="ml-4"
+                            mat-flat-button
+                            type="submit"
+                            [color]="'primary'">Save
+                        </button>
+                    </div>
+                  </form>
+                  
+            </mat-expansion-panel>
+        </mat-accordion>
+    </div>
+</div>

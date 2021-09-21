@@ -1,0 +1,79 @@
+<div class="flex flex-col flex-auto items-center sm:justify-center min-w-0">
+    <div class="w-full sm:w-auto py-8 px-4 sm:p-12 sm:rounded-2xl sm:shadow sm:bg-card">
+        <div class="w-full max-w-80 sm:w-80 mx-auto sm:mx-0">
+            <!-- Logo -->
+            <div class="w-12">
+                <img src="assets/images/logo/logo.svg">
+            </div>
+
+            <!-- Title -->
+             <!-- Title -->
+             <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Resend email verification</div>
+            <div class="mt-4">
+                <!-- Alert -->
+                <fuse-alert
+                    class="mt-8 -mb-4"
+                    *ngIf="showAlert"
+                    [appearance]="'outline'"
+                    [showIcon]="false"
+                    [type]="alert.type"
+                    [@shake]="alert.type === 'error'">
+                    <div class="text-lg">{{alert.message}}</div>
+                </fuse-alert>
+            </div>
+
+              <!-- Sign in form -->
+              <form
+                (ngSubmit)="resendVerification()"
+                class="mt-8"
+                [formGroup]="resendEmailForm"
+                #resendEmailNgForm="ngForm">
+
+              <!-- Email field -->
+              <mat-form-field class="w-full">
+                  <mat-label>Email address</mat-label>
+                  <input
+                      id="email"
+                      matInput
+                      [formControlName]="'email'">
+                  <mat-error *ngIf="resendEmailForm.get('email').hasError('required') 
+                       && (resendEmailForm.get('email').dirty || resendEmailForm.get('email').touched || resendEmailNgForm.submitted)">
+                      Email address is required
+                  </mat-error>
+                  <mat-error *ngIf="resendEmailForm.get('email').hasError('email')
+                      && (resendEmailForm.get('email').dirty || resendEmailForm.get('email').touched)">
+                      Please enter a valid email address
+                  </mat-error>
+                  <mat-error *ngIf="resendEmailForm.get('email').hasError('maxlength')
+                      && (resendEmailForm.get('email').dirty || resendEmailForm.get('email').touched)">
+                      Email address is too big
+                  </mat-error>
+              </mat-form-field>
+
+              <!-- Submit button -->
+              <button
+                  class="fuse-mat-button-large w-full mt-6"
+                  mat-flat-button
+                  [color]="'primary'"
+                  [disabled]="resendEmailForm.disabled">
+                  <span *ngIf="!resendEmailForm.disabled">
+                      Send
+                  </span>
+                  <mat-progress-spinner
+                      *ngIf="resendEmailForm.disabled"
+                      [diameter]="24"
+                      [mode]="'indeterminate'"></mat-progress-spinner>
+              </button>
+          </form>
+
+            <!-- Form footer -->
+            <div class="mt-8 text-md font-medium text-secondary">
+                <span>Return to</span>
+                <a
+                    class="ml-1 text-primary-500 hover:underline"
+                    [routerLink]="['/sign-in']">sign in
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

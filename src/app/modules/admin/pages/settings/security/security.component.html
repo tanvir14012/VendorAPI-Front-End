@@ -1,0 +1,413 @@
+<div class="w-full max-w-3xl">
+
+    <!-- Form -->
+    <form [formGroup]="changePasswordForm">
+
+        <!-- Section -->
+        <div class="w-full">
+            <div class="text-xl">Change your password</div>
+            <div class="text-secondary">It's recomended to change your password regularly for protectiction against
+                password theft attacks!</div>
+        </div>
+        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+            <!-- Current password -->
+            <div class="sm:col-span-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Current password</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:key'" matPrefix></mat-icon>
+                    <input [formControlName]="'currentPassword'" type="password" matInput>
+                    <mat-error *ngIf="(changePasswordForm.get('currentPassword').hasError('required') 
+                        || changePasswordForm.get('currentPassword').hasError('minlength')) && 
+                        (changePasswordForm.get('currentPassword').dirty ||
+                         changePasswordForm.get('currentPassword').touched)">Password is incorrect</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- New password -->
+            <div class="sm:col-span-4">
+                <mat-form-field class="fuse-mat-no-subscript w-full">
+                    <mat-label>New password</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:key'" matPrefix></mat-icon>
+                    <input [formControlName]="'newPassword'" type="password" matInput>
+                    <mat-error *ngIf="(changePasswordForm.get('newPassword').hasError('required') 
+                        || changePasswordForm.get('newPassword').hasError('minlength')) && 
+                        (changePasswordForm.get('newPassword').dirty ||
+                         changePasswordForm.get('newPassword').touched)">Password format is incorrect</mat-error>
+                </mat-form-field>
+                <div class="mt-1 text-md text-hint">Minimum 6 characters. Must include numbers, letters and special
+                    characters.</div>
+            </div>
+        </div>
+
+        <div *ngIf="accountSecurity.passwordChangeSuccess" class=" mt-4">
+            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #passwordChangeSuccessAlert>
+                <span fuseAlertTitle>Success</span>
+                You password has been changed successfully. You need to use the new password for the future logins.
+            </fuse-alert>
+         </div>
+
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end mt-10">
+            <button mat-stroked-button type="button" (click)=" cancelPasswordChange()">
+                Cancel
+            </button>
+            <button class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onPasswordChangeSubmit()">Save
+            </button>
+        </div>
+    </form>
+
+    <!-- Divider -->
+    <div class="my-10 border-t"></div>
+
+    <!-- Section change email -->
+    <div class="w-full">
+        <div class="text-xl">Change your email (User ID)</div>
+        <div class="text-secondary">You will be prompted to enter the verification tokens sent to the current and the new email address.</div>
+    </div>
+    <!-- New email input form-->
+    <form class="my-10" *ngIf="!accountSecurity.emailChangeInProgress" [formGroup]="changeEmailForm">
+        <div class="sm:col-span-4">
+            <mat-form-field class="w-full">
+                <mat-label>New email (User Id)</mat-label>
+                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:mail'" matPrefix></mat-icon>
+                <input [formControlName]="'newEmail'" type="email" matInput>
+                <mat-error *ngIf="changeEmailForm.get('newEmail').hasError('required') && 
+                    (changeEmailForm.get('newEmail').dirty || changeEmailForm.get('newEmail').touched)">The field is required</mat-error>
+                <mat-error *ngIf="changeEmailForm.get('newEmail').hasError('email') && 
+                    (changeEmailForm.get('newEmail').dirty || changeEmailForm.get('newEmail').touched)">A valid email address is required</mat-error>
+            </mat-form-field>
+        </div>
+    </form>
+
+    <!-- Verification token submit form -->
+    <form *ngIf="accountSecurity.emailChangeInProgress && !accountSecurity.emailChangeSuccess"
+     [formGroup]="changeEmailVerificationForm">
+        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+            <div class="sm: col-span-4 text-secondary">
+                Two verification emails with tokens are sent to your current email address and the new email address respectively. Please
+                enter the tokens in the fields below. Tokens are vaild for 24 hours.
+            </div>
+            <!-- Current email token -->
+            <div class="sm:col-span-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Token sent to the current email address</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                    <input [formControlName]="'tokenToCurrentEmail'" type="text" matInput>
+                    <mat-error>A valid token is required</mat-error>
+                </mat-form-field>
+            </div>
+            <!-- New email token -->
+            <div class="sm:col-span-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Token sent to the new email address</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                    <input [formControlName]="'tokenToNewEmail'" type="text" matInput>
+                    <mat-error>A valid token is required</mat-error>
+                </mat-form-field>
+            </div>
+
+            <div *ngIf="accountSecurity.emailChangeSuccess === false" class="sm:col-span-4">
+                <mat-error>Invalid or expired token provided. Please try again.</mat-error>
+            </div>
+        </div>
+    </form>
+     
+     <div *ngIf="accountSecurity.emailChangeSuccess" class=" mt-4">
+        <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #emailChangeSuccessAlert>
+            <span fuseAlertTitle>Success</span>
+            Your email (User Id) has been changed successfully. You need to use the new email for the future logins.
+        </fuse-alert>
+     </div>
+
+     <!-- Actions -->
+     <div *ngIf="!accountSecurity.emailChangeSuccess" class="flex items-center justify-end mt-10">
+         <button type="button" mat-stroked-button type="button" (click)="cancelEmailChange()">
+             Cancel
+         </button>
+         <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onEmailChangeSubmit()">Submit
+         </button>
+     </div>
+
+
+         <!-- Divider -->
+    <div class="my-10 border-t"></div>
+
+    <!-- Section change email -->
+    <div class="w-full">
+        <div class="text-xl">Change your phone number</div>
+        <div class="text-secondary">You will be prompted to enter the verification one time password (OTP) sent to the current and the new phone number.</div>
+    </div>
+    <!-- New phone input form-->
+    <form class="my-10" *ngIf="!accountSecurity.phoneChangeInProgress" [formGroup]="changePhoneForm">
+        <div class="sm:col-span-4">
+            <mat-form-field class="w-full">
+                <mat-label>New phone number</mat-label>
+                <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:phone'" matPrefix></mat-icon>
+                <input [formControlName]="'newPhone'" type="tel" matInput>
+                <mat-select
+                            class="mr-1.5"
+                            [formControlName]="'country'"
+                            matPrefix>
+                            <mat-select-trigger>
+                                <span class="flex items-center">
+                                    <span
+                                        class="hidden sm:flex w-6 h-4 mr-1 overflow-hidden"
+                                        [style.background]="'url(\'/assets/images/apps/contacts/flags.png\') no-repeat 0 0'"
+                                        [style.backgroundSize]="'24px 3876px'"
+                                        [style.backgroundPosition]="getCountryByIso(changePhoneForm.get('country').value)?.flagImagePos"></span>
+                                    <span class="sm:mx-0.5 font-medium text-default">{{getCountryByIso(changePhoneForm.get('country').value)?.code}}</span>
+                                </span>
+                            </mat-select-trigger>
+                            <ng-container *ngFor="let country of countryList; trackBy: trackByFn">
+                                <mat-option [value]="country.iso">
+                                    <span class="flex items-center">
+                                        <span
+                                            class="w-6 h-4 overflow-hidden"
+                                            [style.background]="'url(\'/assets/images/apps/contacts/flags.png\') no-repeat 0 0'"
+                                            [style.backgroundSize]="'24px 3876px'"
+                                            [style.backgroundPosition]="country?.flagImagePos"></span>
+                                        <span class="ml-2">{{country.name}}</span>
+                                        <span class="ml-2 font-medium">{{country.code}}</span>
+                                    </span>
+                                </mat-option>
+                            </ng-container>
+                        </mat-select>
+                <mat-error *ngIf="changePhoneForm.get('newPhone').hasError('required') && 
+                    (changePhoneForm.get('newPhone').dirty || changePhoneForm.get('newPhone').touched)">The field is required</mat-error>
+                <mat-error *ngIf="changePhoneForm.get('newPhone').hasError('pattern') && 
+                    (changePhoneForm.get('newPhone').dirty || changePhoneForm.get('newPhone').touched)">A valid phone number is required</mat-error>
+            </mat-form-field>
+        </div>
+    </form>
+
+    <!-- Verification token submit form -->
+    <form *ngIf="accountSecurity.phoneChangeInProgress && !accountSecurity.phoneChangeSuccess"
+     [formGroup]="changePhoneVerificationForm">
+        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+            <div class="sm: col-span-4 text-secondary">
+                An one time passwords (OTP) has been sent to the new phone number. Please
+                enter the OTP in the field below. OTP is vaild for 5 minutes.
+            </div>
+
+            <!-- New phone token -->
+            <div class="sm:col-span-4">
+                <mat-form-field class="w-full">
+                    <mat-label>OTP sent to the new phone number</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                    <input [formControlName]="'otpToNewPhone'" type="text" matInput>
+                    <mat-error>A valid OTP is required</mat-error>
+                </mat-form-field>
+            </div>
+
+            <div *ngIf="accountSecurity.phoneChangeSuccess === false" class="sm:col-span-4">
+                <mat-error>Invalid or expired otp provided. Please try again.</mat-error>
+            </div>
+        </div>
+    </form>
+     
+     <div *ngIf="accountSecurity.phoneChangeSuccess" class=" mt-4">
+        <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #phoneChangeSuccessAlert>
+            <span fuseAlertTitle>Success</span>
+            Your phone number has been changed successfully. You need to use the new email for the future logins.
+        </fuse-alert>
+     </div>
+
+     <!-- Actions -->
+     <div *ngIf="!accountSecurity.phoneChangeSuccess" class="flex items-center justify-end mt-10">
+         <button type="button" mat-stroked-button type="button" (click)="cancelPhoneChange()">
+             Cancel
+         </button>
+         <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onPhoneChangeSubmit()">Submit
+         </button>
+     </div>
+
+    <!-- Divider -->
+    <div class="my-10 border-t"></div>
+
+    <!-- Section -->
+    <div class="w-full">
+        <div class="text-xl">Security preferences</div>
+        <div class="text-secondary">Keep your account more secure with following preferences.</div>
+    </div>
+    <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+        <!-- 2-step auth -->
+        <div class="sm:col-span-4 flex items-center justify-between">
+            <div class="flex-auto cursor-pointer">
+                <div class="leading-6 font-medium">Enable 2-step authentication</div>
+                <div class="text-md text-secondary">
+                    Protects you against password theft by requesting an authentication code via Email, 
+                    SMS or smartphone app on every login.
+                </div>
+            </div>
+        </div>
+        <div class="sm:col-span-4">
+            <form [formGroup]="twoFASetupForm">
+                <mat-card class="rounded-2xl">
+                    <mat-card-content>
+                        <mat-grid-list [cols]="'6'" [rowHeight]="'100px'">
+                            <mat-radio-group #twoFARadioGrp="matRadioGroup" [formControlName]="'mode'">
+                                <ng-container *ngFor="let ops of twoFaOptions">
+                                    <mat-grid-tile [colspan]="'1'" [rowspan]="'1'" class="border-b cursor-pointer" (click)="twoFARadioGrp.value = ops.value">
+                                        <div class="flex items-center">
+                                            <mat-radio-button [value]="ops.value"></mat-radio-button>
+                                        </div>
+                                    </mat-grid-tile>
+                                    <mat-grid-tile [colspan]="'5'" [rowspan]="'1'" class="border-b cursor-pointer" (click)="twoFARadioGrp.value = ops.value">
+                                        <div class="w-full flex flex-col">
+                                            <div class="text-lg">{{ops.label}}</div>
+                                            <div class="text-secondary">{{ops.details}}</div>
+                                        </div>
+                                    </mat-grid-tile>
+                                </ng-container>
+                            </mat-radio-group>
+                        </mat-grid-list>
+                    </mat-card-content>
+
+                    <mat-card-content>
+                        <div *ngIf="check2FASetup(twoFARadioGrp.value)">
+                            <div class="text-secondary">Two factor authentication via <i>{{get2FAoptionInfo(twoFARadioGrp.value)?.label}}</i> has not been set up yet.</div>
+                            <div class="mt-4">
+                                <mat-accordion>
+                                    <mat-expansion-panel>
+                                        <mat-expansion-panel-header>
+                                            <mat-panel-title>
+                                              Set up
+                                            </mat-panel-title>
+                                            <mat-panel-description>
+                                                {{get2FAoptionInfo(twoFARadioGrp.value)?.label}}
+                                            </mat-panel-description>
+                                          </mat-expansion-panel-header>
+                                          
+                                          <!-- Auth App config -->
+                                          <div class="flex flex-col" *ngIf="twoFARadioGrp.value === 1">
+                                                <div class="flex flex-col">
+                                                    <div class="my-1"><b>Step 1.</b> Install an authenticator app on your smartphone. Example: Google Authenticator, Microsoft Authenticator, Authy etc.</div>
+                                                    <div class="my-1"><b>Step 2.</b> Open you app and scan the QR code below or use the code to setup the authenticator for this app.</div>
+                                                    <img [src]="accountSecurity.twoFA.appConfig.qrUrl" width="240" height="240">
+                                                    <mat-form-field [ngClass]="formFieldHelpers">
+                                                        <mat-label>Code for manual entry</mat-label>
+                                                        <input readonly matInput [value]="accountSecurity.twoFA.appConfig.setUpCode" #setupCode>
+                                                        <button mat-icon-button class="cursor-pointer" matSuffix [cdkCopyToClipboard]="setupCode.value" (click)="openSnackBar('code copied!', null, 500)">
+                                                            <mat-icon [svgIcon]="'heroicons_outline:clipboard-copy'"></mat-icon>
+                                                        </button>
+                                                    </mat-form-field>
+                                                    <div class="my-1" [formGroup]="verifyAuthenticatorAppForm">
+                                                        <div class="my-1"><b>Step 3.</b> Enter the security code from the authenticator app.</div>
+                                                        <mat-form-field class="w-full my-1">
+                                                            <mat-label>Security code</mat-label>
+                                                            <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                                                            <input [formControlName]="'securityCode'" type="text" matInput>
+                                                            <mat-error>A valid code is required</mat-error>
+                                                        </mat-form-field>
+
+                                                         <!-- Actions -->
+                                                        <div *ngIf="accountSecurity.twoFA.appConfig.setupInProgress" class="flex items-center justify-end mt-10">
+                                                            <button type="button" mat-stroked-button type="button" (click)="cancelAuthAppSecurityCodeSubmit()">
+                                                                Cancel
+                                                            </button>
+                                                            <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onAuthAppSecurityCodeSubmit()">Submit
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                          </div>
+
+                                           <!-- SMS config -->
+                                           <div class="flex flex-col" *ngIf="twoFARadioGrp.value === 2">
+                                            <div class="flex flex-col">
+
+                                                <div class="my-1" [formGroup]="verify2FA_SMS_Form">
+                                                    <div class="my-1">Enter the one time password OTP sent via SMS to your phone number {{accountSecurity.twoFA.smsConfig.number}}.</div>
+                                                    <mat-form-field class="w-full my-1">
+                                                        <mat-label>OTP code</mat-label>
+                                                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                                                        <input [formControlName]="'otpCode'" type="text" matInput>
+                                                        <mat-error>A valid code is required</mat-error>
+                                                    </mat-form-field>
+
+
+                                                     <!-- Actions -->
+                                                    <div *ngIf="accountSecurity.twoFA.smsConfig.setupInProgress" class="flex items-center justify-end mt-10">
+                                                        <button type="button" mat-stroked-button type="button" (click)="cancel2FA_SMS_OTP_Submit()">
+                                                            Cancel
+                                                        </button>
+                                                        <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="on2FA_SMS_OTP_Submit()">Submit
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                      </div>
+
+                                      <!-- Email config -->
+                                      <div class="flex flex-col" *ngIf="twoFARadioGrp.value === 3">
+                                        <div class="flex flex-col">
+
+                                            <div class="my-1" [formGroup]="verify2FA_Email_Form">
+                                                <div class="my-1">Enter the security code sent to your email address {{accountSecurity.twoFA.emailConfig.email}}.</div>
+                                                <mat-form-field class="w-full my-1">
+                                                    <mat-label>Security code</mat-label>
+                                                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                                                    <input [formControlName]="'securityCode'" type="text" matInput>
+                                                    <mat-error>A valid code is required</mat-error>
+                                                </mat-form-field>
+
+                                                
+                                                 <!-- Actions -->
+                                                <div *ngIf="accountSecurity.twoFA.emailConfig.setupInProgress" class="flex items-center justify-end mt-10">
+                                                    <button type="button" mat-stroked-button type="button" (click)="cancel2FA_Email_OTP_Submit()">
+                                                        Cancel
+                                                    </button>
+                                                    <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="on2FA_Email_OTP_Submit()">Submit
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                  </div>
+                                    </mat-expansion-panel>
+                                </mat-accordion>
+                            </div>
+                        </div>
+
+                        <!-- Success alert -->
+                        <div *ngIf="accountSecurity.twoFA.appConfig.setupSuccess" class=" mt-4">
+                            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #twoFAAppSuccessAlert>
+                                <span fuseAlertTitle>Success</span>
+                                Two factor authentication has been set up successfully via authenticator app.
+                            </fuse-alert>
+                        </div>
+
+                        <!-- Success alert -->
+                        <div *ngIf="accountSecurity.twoFA.smsConfig.setupSuccess" class=" mt-4">
+                            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #twoFASMSSuccessAlert>
+                                <span fuseAlertTitle>Success</span>
+                                Two factor authentication has been set up successfully via SMS.
+                            </fuse-alert>
+                        </div>
+
+                        <!-- Success alert -->
+                        <div *ngIf="accountSecurity.twoFA.emailConfig.setupSuccess" class=" mt-4">
+                            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #twoFAEmailSuccessAlert>
+                                <span fuseAlertTitle>Success</span>
+                                Two factor authentication has been set up successfully via email.
+                            </fuse-alert>
+                         </div>
+                    </mat-card-content>
+                </mat-card>
+            </form>
+        </div>
+        <!-- Ask to change password -->
+        <div class="sm:col-span-4 flex items-center justify-between">
+            <div class="flex-auto cursor-pointer" (click)="lockSessionToggle.toggle()">
+                <div class="leading-6 font-medium">Lock session in case of inactivity</div>
+                <div class="text-md text-secondary">
+                    A simple but an effective way to be protected against session theft. You will be prompted to
+                    enter your password to regain locked session due to 30 minutes of inactivity.
+                </div>
+            </div>
+            <mat-slide-toggle class="ml-4" [color]="'primary'"
+                #lockSessionToggle>
+            </mat-slide-toggle>
+        </div>
+    </div>
+
+</div>
