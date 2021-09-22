@@ -10,8 +10,7 @@ import { AccountStatus, UserType } from 'app/core/auth/auth-types';
 @Component({
     selector       : 'settings',
     templateUrl    : './settings.component.html',
-    encapsulation  : ViewEncapsulation.None,
-    changeDetection: ChangeDetectionStrategy.OnPush
+    encapsulation  : ViewEncapsulation.None
 })
 export class SettingsComponent implements OnInit, OnDestroy
 {

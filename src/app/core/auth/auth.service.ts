@@ -133,6 +133,8 @@ export class AuthService {
 
                     if (refreshResult.refreshSucceeded) {
                         this.accessToken = refreshResult.accessToken;
+                        //Refresh the auth status
+                        this.checkAuthStatus();
                     }
                     else if (refreshResult.signedOut) {
                         // Remove the access token from the local storage

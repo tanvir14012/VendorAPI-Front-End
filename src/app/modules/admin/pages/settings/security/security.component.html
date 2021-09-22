@@ -1,7 +1,7 @@
 <div class="w-full max-w-3xl">
 
     <!-- Form -->
-    <form [formGroup]="changePasswordForm">
+    <form [formGroup]="changePasswordForm" #changePasswordNgForm="ngForm">
 
         <!-- Section -->
         <div class="w-full">
@@ -15,35 +15,103 @@
                 <mat-form-field class="w-full">
                     <mat-label>Current password</mat-label>
                     <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:key'" matPrefix></mat-icon>
-                    <input [formControlName]="'currentPassword'" type="password" matInput>
-                    <mat-error *ngIf="(changePasswordForm.get('currentPassword').hasError('required') 
-                        || changePasswordForm.get('currentPassword').hasError('minlength')) && 
-                        (changePasswordForm.get('currentPassword').dirty ||
-                         changePasswordForm.get('currentPassword').touched)">Password is incorrect</mat-error>
-                </mat-form-field>
+                    <input [formControlName]="'currentPassword'" type="password" matInput #passwordField>
+                    <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordField.type === 'password' ? passwordField.type = 'text' : passwordField.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                        <mat-error *ngIf="(changePasswordForm.get('currentPassword').hasError('required') 
+                            || changePasswordForm.get('currentPassword').hasError('minlength') || 
+                            changePasswordForm.get('currentPassword').hasError('maxlength') || 
+                            changePasswordForm.get('currentPassword').hasError('pattern')) && 
+                            (changePasswordForm.get('currentPassword').dirty ||
+                            changePasswordForm.get('currentPassword').touched || 
+                            changePasswordNgForm.submitted)">Password is incorrect</mat-error>
+                        
+                    </mat-form-field>
             </div>
+
             <!-- New password -->
             <div class="sm:col-span-4">
-                <mat-form-field class="fuse-mat-no-subscript w-full">
+                <mat-form-field class="w-full">
                     <mat-label>New password</mat-label>
                     <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:key'" matPrefix></mat-icon>
-                    <input [formControlName]="'newPassword'" type="password" matInput>
-                    <mat-error *ngIf="(changePasswordForm.get('newPassword').hasError('required') 
-                        || changePasswordForm.get('newPassword').hasError('minlength')) && 
-                        (changePasswordForm.get('newPassword').dirty ||
-                         changePasswordForm.get('newPassword').touched)">Password format is incorrect</mat-error>
+                    <input [formControlName]="'newPassword'" type="password" matInput #passwordField2>
+                    <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordField2.type === 'password' ? passwordField2.type = 'text' : passwordField2.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField2.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField2.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                        <mat-error *ngIf="(changePasswordForm.get('newPassword').hasError('required') 
+                            || changePasswordForm.get('newPassword').hasError('minlength') 
+                            || changePasswordForm.get('newPassword').hasError('maxlength')
+                            || changePasswordForm.get('newPassword').hasError('pattern')) && 
+                            (changePasswordForm.get('newPassword').dirty ||
+                            changePasswordForm.get('newPassword').touched || changePasswordNgForm.submitted)">Password format is incorrect</mat-error>
+                
+                         <mat-error *ngIf="changePasswordForm.hasError('passwordsEqual')">Passwords can not be same</mat-error>
+                    </mat-form-field>
+                <div class="mt-1 text-md text-hint">Minimum 6 characters. Must include numbers, letters and special
+                    characters.</div>
+            </div>
+
+             <!-- Confirm new password -->
+             <div class="sm:col-span-4">
+                <mat-form-field class="w-full">
+                    <mat-label>Confirm new password</mat-label>
+                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:key'" matPrefix></mat-icon>
+                    <input [formControlName]="'confirmNewPassword'" type="password" matInput #passwordField3>
+                    <button
+                            mat-icon-button
+                            type="button"
+                            (click)="passwordField3.type === 'password' ?
+                             passwordField3.type = 'text' : passwordField3.type = 'password'"
+                            matSuffix>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField3.type === 'password'"
+                                [svgIcon]="'heroicons_solid:eye'"></mat-icon>
+                            <mat-icon
+                                class="icon-size-5"
+                                *ngIf="passwordField3.type === 'text'"
+                                [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
+                        </button>
+                    <mat-error>Password and confirm password must match</mat-error>
                 </mat-form-field>
                 <div class="mt-1 text-md text-hint">Minimum 6 characters. Must include numbers, letters and special
                     characters.</div>
             </div>
         </div>
 
-        <div *ngIf="accountSecurity.passwordChangeSuccess" class=" mt-4">
-            <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #passwordChangeSuccessAlert>
-                <span fuseAlertTitle>Success</span>
-                You password has been changed successfully. You need to use the new password for the future logins.
+            <!-- Password Change Alert -->
+            <fuse-alert
+                class="mt-8 -mb-4"
+                *ngIf="showChangePasswordAlert"
+                [appearance]="'outline'"
+                [showIcon]="false"
+                [type]="passwordChangeAlert.type"
+                [@shake]="passwordChangeAlert.type === 'error'">
+                <div class="text-lg">{{passwordChangeAlert.message}}</div>
             </fuse-alert>
-         </div>
 
 
         <!-- Actions -->
@@ -51,7 +119,13 @@
             <button mat-stroked-button type="button" (click)=" cancelPasswordChange()">
                 Cancel
             </button>
-            <button class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onPasswordChangeSubmit()">Save
+            <button class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onPasswordChangeSubmit()">
+                <span *ngIf="!changePasswordForm.disabled">Save</span>
+                <mat-progress-spinner
+                        *ngIf="changePasswordForm.disabled"
+                        [diameter]="24"
+                        [mode]="'indeterminate'">
+                </mat-progress-spinner>
             </button>
         </div>
     </form>
@@ -62,77 +136,113 @@
     <!-- Section change email -->
     <div class="w-full">
         <div class="text-xl">Change your email (User ID)</div>
-        <div class="text-secondary">You will be prompted to enter the verification tokens sent to the current and the new email address.</div>
+        <div class="text-secondary">You will be prompted to enter the verification code sent to the new email address.</div>
     </div>
     <!-- New email input form-->
-    <form class="my-10" *ngIf="!accountSecurity.emailChangeInProgress" [formGroup]="changeEmailForm">
+    <form  *ngIf="!emailChangeExpiry" class="my-10" [formGroup]="changeEmailForm" #changeEmailNgForm="ngForm">
         <div class="sm:col-span-4">
             <mat-form-field class="w-full">
-                <mat-label>New email (User Id)</mat-label>
+                <mat-label>New email address</mat-label>
                 <mat-icon class="icon-size-5" [svgIcon]="'heroicons_solid:mail'" matPrefix></mat-icon>
-                <input [formControlName]="'newEmail'" type="email" matInput>
-                <mat-error *ngIf="changeEmailForm.get('newEmail').hasError('required') && 
-                    (changeEmailForm.get('newEmail').dirty || changeEmailForm.get('newEmail').touched)">The field is required</mat-error>
-                <mat-error *ngIf="changeEmailForm.get('newEmail').hasError('email') && 
-                    (changeEmailForm.get('newEmail').dirty || changeEmailForm.get('newEmail').touched)">A valid email address is required</mat-error>
+                <input [formControlName]="'email'" type="email" matInput>
+                <mat-error *ngIf="changeEmailForm.get('email').hasError('required') && 
+                    (changeEmailForm.get('email').dirty || changeEmailForm.get('email').touched 
+                    || changeEmailNgForm.submitted)">Email address is required</mat-error>
+                
+                    <mat-error *ngIf="changeEmailForm.get('email').hasError('maxlength') && 
+                    (changeEmailForm.get('email').dirty || 
+                    changeEmailForm.get('email').touched)">Email address is too big</mat-error>
+
+                <mat-error *ngIf="changeEmailForm.get('email').hasError('email') && 
+                    (changeEmailForm.get('email').dirty || 
+                    changeEmailForm.get('email').touched)">A valid email address is required</mat-error>
             </mat-form-field>
         </div>
-    </form>
 
-    <!-- Verification token submit form -->
-    <form *ngIf="accountSecurity.emailChangeInProgress && !accountSecurity.emailChangeSuccess"
-     [formGroup]="changeEmailVerificationForm">
-        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
-            <div class="sm: col-span-4 text-secondary">
-                Two verification emails with tokens are sent to your current email address and the new email address respectively. Please
-                enter the tokens in the fields below. Tokens are vaild for 24 hours.
-            </div>
-            <!-- Current email token -->
-            <div class="sm:col-span-4">
-                <mat-form-field class="w-full">
-                    <mat-label>Token sent to the current email address</mat-label>
-                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
-                    <input [formControlName]="'tokenToCurrentEmail'" type="text" matInput>
-                    <mat-error>A valid token is required</mat-error>
-                </mat-form-field>
-            </div>
-            <!-- New email token -->
-            <div class="sm:col-span-4">
-                <mat-form-field class="w-full">
-                    <mat-label>Token sent to the new email address</mat-label>
-                    <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
-                    <input [formControlName]="'tokenToNewEmail'" type="text" matInput>
-                    <mat-error>A valid token is required</mat-error>
-                </mat-form-field>
-            </div>
-
-            <div *ngIf="accountSecurity.emailChangeSuccess === false" class="sm:col-span-4">
-                <mat-error>Invalid or expired token provided. Please try again.</mat-error>
-            </div>
+        <!-- Actions -->
+        <div class="flex items-center justify-end mt-10">
+            <button type="button" mat-stroked-button type="button" (click)="cancelEmailChange()">
+                Cancel
+            </button>
+            <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onEmailChangeSubmit()">
+                <span *ngIf="!changeEmailForm.disabled">Submit</span>
+                <mat-progress-spinner
+                            *ngIf="changeEmailForm.disabled"
+                            [diameter]="24"
+                            [mode]="'indeterminate'">
+                    </mat-progress-spinner>
+            </button>
         </div>
     </form>
-     
-     <div *ngIf="accountSecurity.emailChangeSuccess" class=" mt-4">
-        <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #emailChangeSuccessAlert>
-            <span fuseAlertTitle>Success</span>
-            Your email (User Id) has been changed successfully. You need to use the new email for the future logins.
-        </fuse-alert>
-     </div>
 
-     <!-- Actions -->
-     <div *ngIf="!accountSecurity.emailChangeSuccess" class="flex items-center justify-end mt-10">
-         <button type="button" mat-stroked-button type="button" (click)="cancelEmailChange()">
-             Cancel
-         </button>
-         <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onEmailChangeSubmit()">Submit
-         </button>
-     </div>
+    <!-- Email Change Request Alert -->
+    <fuse-alert
+        class="mt-8 -mb-4"
+        *ngIf="showChangeEmailRequestAlert"
+        [appearance]="'outline'"
+        [showIcon]="false"
+        [dismissible]="true"
+        [type]="emailChangeRequestAlert.type"
+        [@shake]="emailChangeRequestAlert.type === 'error'">
+        <div class="text-lg">{{emailChangeRequestAlert.message}}</div>                          
+    </fuse-alert>     
 
+    <!-- Verification token submit form -->
+    <form *ngIf="emailChangeExpiry"
+     [formGroup]="changeEmailVerificationForm" #changeEmailVerificationNgForm="ngForm">
+            <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+                <!-- New email token -->
+                <div class="sm:col-span-4">
+                    <mat-form-field class="w-full">
+                        <mat-label>Code sent to the new email address</mat-label>
+                        <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
+                        <input [formControlName]="'token'" type="text" matInput>
+                        <mat-error>A valid code is required</mat-error>
+                    </mat-form-field>
+                </div>
+            </div>
 
+            <!-- Countdown timer-->
+            <ng-container *ngIf="emailChangeCountdown > 0">
+                <div class="w-full">
+                    <span class="text-secondary">Code expires in: </span>
+                    <span class="text-xl font-semibold">{{emailChangeCountdown | countdown}}</span>
+                </div>
+            </ng-container>            
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end mt-10">
+                <button type="button" mat-stroked-button type="button" (click)="cancelEmailChangeTokenSubmit()">
+                    Cancel
+                </button>
+                <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'"
+                 (click)="onEmailChangeTokenSubmit()">
+                    <span *ngIf="!changeEmailVerificationForm.disabled">Submit</span>
+                    <mat-progress-spinner
+                                *ngIf="changeEmailVerificationForm.disabled"
+                                [diameter]="24"
+                                [mode]="'indeterminate'">
+                    </mat-progress-spinner>
+                </button>
+            </div>
+    </form>
+
+    <!-- Email Change Verification Alert (Success/fail) -->
+    <fuse-alert
+        class="mt-8 -mb-4"
+        *ngIf="showChangeEmailVerificaionAlert"
+        [appearance]="'outline'"
+        [dismissible]="true"
+        [showIcon]="false"
+        [type]="emailChangeVerificaionAlert.type"
+        [@shake]="emailChangeVerificaionAlert.type === 'error'">
+        <div class="text-lg">{{emailChangeVerificaionAlert.message}}</div>              
+    </fuse-alert> 
+       
          <!-- Divider -->
     <div class="my-10 border-t"></div>
 
-    <!-- Section change email -->
+    <!-- Section change phone -->
     <div class="w-full">
         <div class="text-xl">Change your phone number</div>
         <div class="text-secondary">You will be prompted to enter the verification one time password (OTP) sent to the current and the new phone number.</div>
