@@ -133,8 +133,17 @@ export class AuthService {
 
                     if (refreshResult.refreshSucceeded) {
                         this.accessToken = refreshResult.accessToken;
+                        
                         //Refresh the auth status
-                        this.checkAuthStatus();
+                        const authStatus = this.populateAuthStatus(refreshResult.accessToken);
+                        if(authStatus) {
+                            this._authStatus$.next(authStatus);
+                        }
+
+                        //Navigate to unlock-session page if session is locked
+                        if(refreshResult.isSessionLocked) {
+                            this._router.navigate(['unlock-session'], { queryParams: { redirectURL: this._router.url}});
+                        }
                     }
                     else if (refreshResult.signedOut) {
                         // Remove the access token from the local storage

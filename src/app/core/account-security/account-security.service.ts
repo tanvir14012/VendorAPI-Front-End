@@ -46,4 +46,27 @@ export class AccountSecurityService {
         );
     }
 
+
+    /**
+     * Send token to change phone number
+     */
+          sendPhoneNumberChangeToken(credentials: {newPhone: string}): Observable<any> {
+            return this._httpClient.post<boolean>(`${environment.ApiRoot}/account/sendPhoneNumberChangeToken`,credentials).pipe(
+                catchError(() => {
+                    return of(false);
+                })
+            );
+        }
+    
+        /**
+         * Change the email
+         */
+         changePhoneNumber(credentials: {newPhone: string, token: string}): Observable<any> {
+            return this._httpClient.post<boolean>(`${environment.ApiRoot}/account/changePhoneNumber`,credentials).pipe(
+                catchError(() => {
+                    return of(false);
+                })
+            );
+        }
+
 }

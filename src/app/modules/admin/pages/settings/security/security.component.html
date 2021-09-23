@@ -245,10 +245,10 @@
     <!-- Section change phone -->
     <div class="w-full">
         <div class="text-xl">Change your phone number</div>
-        <div class="text-secondary">You will be prompted to enter the verification one time password (OTP) sent to the current and the new phone number.</div>
+        <div class="text-secondary">You will be prompted to enter the verification one time password (OTP) sent to the new phone number.</div>
     </div>
     <!-- New phone input form-->
-    <form class="my-10" *ngIf="!accountSecurity.phoneChangeInProgress" [formGroup]="changePhoneForm">
+    <form class="my-10" *ngIf="!phoneChangeExpiry" [formGroup]="changePhoneForm" #changePhoneNgForm="ngForm">
         <div class="sm:col-span-4">
             <mat-form-field class="w-full">
                 <mat-label>New phone number</mat-label>
@@ -283,53 +283,92 @@
                             </ng-container>
                         </mat-select>
                 <mat-error *ngIf="changePhoneForm.get('newPhone').hasError('required') && 
-                    (changePhoneForm.get('newPhone').dirty || changePhoneForm.get('newPhone').touched)">The field is required</mat-error>
+                    (changePhoneForm.get('newPhone').dirty || changePhoneForm.get('newPhone').touched || changePasswordNgForm.submitted)">The field is required</mat-error>
                 <mat-error *ngIf="changePhoneForm.get('newPhone').hasError('pattern') && 
-                    (changePhoneForm.get('newPhone').dirty || changePhoneForm.get('newPhone').touched)">A valid phone number is required</mat-error>
+                    (changePhoneForm.get('newPhone').dirty || changePhoneForm.get('newPhone').touched)">A valid phone number is required, only digits are allowed</mat-error>
             </mat-form-field>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end mt-10">
+            <button type="button" mat-stroked-button type="button" (click)="cancelPhoneChange()">
+                Cancel
+            </button>
+            <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onPhoneChangeSubmit()">
+                <span *ngIf="!changePhoneForm.disabled">Submit</span>
+                <mat-progress-spinner
+                            *ngIf="changePhoneForm.disabled"
+                            [diameter]="24"
+                            [mode]="'indeterminate'">
+                    </mat-progress-spinner>
+            </button>
         </div>
     </form>
 
-    <!-- Verification token submit form -->
-    <form *ngIf="accountSecurity.phoneChangeInProgress && !accountSecurity.phoneChangeSuccess"
-     [formGroup]="changePhoneVerificationForm">
-        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
-            <div class="sm: col-span-4 text-secondary">
-                An one time passwords (OTP) has been sent to the new phone number. Please
-                enter the OTP in the field below. OTP is vaild for 5 minutes.
-            </div>
+    <!-- Phone Change Request Alert -->
+    <fuse-alert
+        class="mt-8 -mb-4"
+        *ngIf="showChangePhoneRequestAlert"
+        [appearance]="'outline'"
+        [showIcon]="false"
+        [dismissible]="true"
+        [type]="phoneChangeRequestAlert.type"
+        [@shake]="phoneChangeRequestAlert.type === 'error'">
+        <div class="text-lg">{{phoneChangeRequestAlert.message}}</div>                          
+    </fuse-alert>
 
-            <!-- New phone token -->
+    <!-- Verification OTP submit form -->
+    <form *ngIf="phoneChangeExpiry"
+     [formGroup]="changePhoneVerificationForm" #changePhoneVerificationNgForm="ngForm">
+        <div class="grid sm:grid-cols-4 gap-6 w-full mt-8">
+
+            <!-- New phone OTP -->
             <div class="sm:col-span-4">
                 <mat-form-field class="w-full">
                     <mat-label>OTP sent to the new phone number</mat-label>
                     <mat-icon class="icon-size-5" [svgIcon]="'heroicons_outline:hashtag'" matPrefix></mat-icon>
-                    <input [formControlName]="'otpToNewPhone'" type="text" matInput>
+                    <input [formControlName]="'token'" type="text" matInput>
                     <mat-error>A valid OTP is required</mat-error>
                 </mat-form-field>
             </div>
+        </div>
 
-            <div *ngIf="accountSecurity.phoneChangeSuccess === false" class="sm:col-span-4">
-                <mat-error>Invalid or expired otp provided. Please try again.</mat-error>
+        <!-- Countdown timer-->
+        <ng-container *ngIf="phoneChangeCountdown > 0">
+            <div class="w-full">
+                <span class="text-secondary">Code expires in: </span>
+                <span class="text-xl font-semibold">{{phoneChangeCountdown | countdown}}</span>
             </div>
+        </ng-container>            
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end mt-10">
+            <button type="button" mat-stroked-button type="button" (click)="cancelPhoneChangeTokenSubmit()">
+                Cancel
+            </button>
+            <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'"
+             (click)="onPhoneChangeTokenSubmit()">
+                <span *ngIf="!changePhoneVerificationForm.disabled">Submit</span>
+                <mat-progress-spinner
+                            *ngIf="changePhoneVerificationForm.disabled"
+                            [diameter]="24"
+                            [mode]="'indeterminate'">
+                </mat-progress-spinner>
+            </button>
         </div>
     </form>
      
-     <div *ngIf="accountSecurity.phoneChangeSuccess" class=" mt-4">
-        <fuse-alert [type]="'success'"  [dismissible]="true" [dismissed]="false" #phoneChangeSuccessAlert>
-            <span fuseAlertTitle>Success</span>
-            Your phone number has been changed successfully. You need to use the new email for the future logins.
-        </fuse-alert>
-     </div>
-
-     <!-- Actions -->
-     <div *ngIf="!accountSecurity.phoneChangeSuccess" class="flex items-center justify-end mt-10">
-         <button type="button" mat-stroked-button type="button" (click)="cancelPhoneChange()">
-             Cancel
-         </button>
-         <button type="button" class="ml-4" mat-flat-button type="button" [color]="'primary'" (click)="onPhoneChangeSubmit()">Submit
-         </button>
-     </div>
+    <!-- Phone Change Verification Alert (Success/fail) -->
+    <fuse-alert
+        class="mt-8 -mb-4"
+        *ngIf="showChangePhoneVerificaionAlert"
+        [appearance]="'outline'"
+        [dismissible]="true"
+        [showIcon]="false"
+        [type]="phoneChangeVerificaionAlert.type"
+        [@shake]="phoneChangeVerificaionAlert.type === 'error'">
+        <div class="text-lg">{{phoneChangeVerificaionAlert.message}}</div>              
+    </fuse-alert> 
 
     <!-- Divider -->
     <div class="my-10 border-t"></div>

@@ -120,6 +120,36 @@
                     (profileForm.get('lastName').dirty || profileForm.get('lastName').touched)">Please choose a valid name</mat-error>
                 </mat-form-field>
             </div>
+
+             <!-- Email -->
+             <div class="sm:col-span-2" *ngIf="!editMode">
+                <mat-form-field class="w-full pointer-events-none">
+                    <mat-label>Email address</mat-label>
+                    <mat-icon
+                        class="icon-size-5"
+                        [svgIcon]="'heroicons_solid:mail'"
+                        matPrefix></mat-icon>
+                    <input
+                        [readonly]="true"
+                        [value]="authStatus.userEmail"
+                        matInput>
+                </mat-form-field>
+            </div>
+
+             <!-- Phone number -->
+             <div class="sm:col-span-2" *ngIf="!editMode">
+                <mat-form-field class="w-full pointer-events-none">
+                    <mat-label>Phone number</mat-label>
+                    <mat-icon
+                        class="icon-size-5"
+                        [svgIcon]="'heroicons_solid:phone'"
+                        matPrefix></mat-icon>
+                    <input
+                        [readonly]="true"
+                        [value]="authStatus.userPhone"
+                        matInput>
+                </mat-form-field>
+            </div>
             <!-- Title -->
             <div class="sm:col-span-2">
                 <mat-form-field class="w-full" [ngClass]="{'pointer-events-none': !editMode}" >

@@ -33,6 +33,8 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
     @ViewChild('changePasswordNgForm') changePasswordNgForm: NgForm;
     @ViewChild('changeEmailNgForm') changeEmailNgForm: NgForm;
     @ViewChild('changeEmailVerificationNgForm') changeEmailVerificationNgForm: NgForm;
+    @ViewChild('changePhoneNgForm') changePhoneNgForm: NgForm;
+    @ViewChild('changePhoneVerificationNgForm') changePhoneVerificationNgForm: NgForm;
     @ViewChildren('passwordChangeSuccessAlert', { read: ElementRef }) private _passwordChangeSuccessAlert: QueryList<ElementRef>;
     @ViewChildren('emailChangeSuccessAlert', { read: ElementRef }) private _emailChangeSuccessAlert: QueryList<ElementRef>;
     @ViewChildren('phoneChangeSuccessAlert', { read: ElementRef }) private _phoneChangeSuccessAlert: QueryList<ElementRef>;
@@ -106,6 +108,23 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
     };
     showChangeEmailVerificaionAlert: boolean = false;
 
+
+
+    phoneChangeRequestAlert: { type: FuseAlertType; message: string } = {
+        type: 'success',
+        message: ''
+    };
+    showChangePhoneRequestAlert: boolean = false;
+
+    phoneChangeExpiry: number | null = null;
+    phoneChangeCountdown: number = 0;
+
+    phoneChangeVerificaionAlert: { type: FuseAlertType; message: string } = {
+        type: 'success',
+        message: ''
+    };
+    showChangePhoneVerificaionAlert: boolean = false;
+
     /**
      * Constructor
      */
@@ -150,20 +169,23 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
             token: ['', [Validators.required, Validators.maxLength(6)]]
         });
 
-        /**
-         * Check the email change status from local storage.
-         */
+        //Check the email change status from local storage.
         this.checkEmailChangeStatus();
+
+        //Check the phone change status from local storage.
+        this.checkPhoneChangeStatus();
+
+        this.checkPhoneChangeStatus();
 
         // Create the change phone form
         this.changePhoneForm = this._formBuilder.group({
             country: ['us', [Validators.required]],
-            newPhone: ['', [Validators.required]]
+            newPhone: ['', [Validators.required, Validators.pattern("^[0-9]{5,15}$")]]
         });
 
         // Create the change phone verification form
         this.changePhoneVerificationForm = this._formBuilder.group({
-            otpToNewPhone: ['', [Validators.required, Validators.maxLength(20)]]
+            token: ['', [Validators.required, Validators.maxLength(6)]]
         });
 
         this.twoFaOptions = [
@@ -270,7 +292,7 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
         this._unsubscribeAll.complete();
     }
 
-     // -----------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------
     // @ Lifecycle hooks end
     // -----------------------------------------------------------------------------------------------------
 
@@ -406,11 +428,13 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
                 this.changeEmailVerificationForm.enable();
                 this.changeEmailVerificationNgForm.resetForm();   
 
-                this.emailChangeCountdown = 0;
-                this.emailChangeExpiry = null;
-                localStorage.removeItem('emailChangeExpiry');
-                localStorage.removeItem('newEmailAddress');
-                this.showChangeEmailRequestAlert = false;
+                if(success) {
+                    this.emailChangeCountdown = 0;
+                    this.emailChangeExpiry = null;
+                    localStorage.removeItem('emailChangeExpiry');
+                    localStorage.removeItem('newEmailAddress');
+                    this.showChangeEmailRequestAlert = false;
+                }
                 
                 //Refresh the access token
                 this._authService.refreshUserTokens().pipe(take(1)).subscribe();
@@ -432,37 +456,213 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
         this.showChangeEmailRequestAlert = false;
     }
 
+    /**
+     * Check the email change status from local storage.
+     */
+        private checkEmailChangeStatus(): void {
+            if(localStorage.getItem('emailChangeExpiry')) {
+                try {
+                    const expiry = parseInt(localStorage.getItem('emailChangeExpiry'));
+                    //If token is not expired
+                    if(new Date().getTime() <= expiry) {
+                        this.emailChangeExpiry = expiry;
+    
+                        //Initialize the counter
+                        const remainingSeconds = Math.floor((expiry - new Date().getTime())/1000);
+                        this.initEmailChangeCountdown(remainingSeconds);
+                    }
+                    else {
+                        this.emailChangeExpiry = null;
+                        localStorage.removeItem('emailChangeExpiry');
+                        localStorage.removeItem('newEmailAddress');
+                    }
+    
+                }
+                catch{
+                    localStorage.removeItem('emailChangeExpiry');
+                    localStorage.removeItem('newEmailAddress');
+    
+                }
+            }
+        }
+    
+        /**
+         * Init countdown for email change token submit
+         */
+        initEmailChangeCountdown(remainingSeconds: number):void {
+            this.emailChangeCountdown = remainingSeconds;
+            
+            timer(1000, 1000).pipe(
+                takeWhile(() => this.emailChangeCountdown > 0),
+                takeUntil(this._unsubscribeAll),
+                tap(() => {
+                    this.emailChangeCountdown--; 
+                    if(this.emailChangeCountdown <= 0) {
+                        this.emailChangeExpiry = null;
+                        localStorage.removeItem('emailChangeExpiry');
+                        localStorage.removeItem('newEmailAddress');
+                        this.showChangeEmailRequestAlert = false;
+                    }
+                })
+            ).subscribe();
+        }
+
 
 
     /**
-    * Submit email change form
+    * Submit phone change form
     */
     onPhoneChangeSubmit(): void {
-        if (this.accountSecurity.phoneChangeInProgress) {
-            if (this.changePhoneVerificationForm.valid) {
-                this.accountSecurity.phoneChangeSuccess = true;
-                this.accountSecurity.phoneChangeInProgress = false;
-                this.changePhoneForm.reset();
-            }
+        if (this.changePhoneForm.invalid) {
+            this.changePhoneForm.markAllAsTouched();
+            return;
         }
-        else {
-            if (this.changePhoneForm.valid) {
-                this.accountSecurity.phoneChangeInProgress = true;
+
+        this.showChangePhoneRequestAlert = false;
+
+        this.changePhoneForm.disable();
+
+        let credentials = this.changePhoneForm.value;
+        const countryCode = this.getCountryByIso(credentials.country)?.code;
+        credentials.newPhone = `${countryCode}${credentials.newPhone}`;
+        delete credentials.country;
+
+        this._accountSecurityService.sendPhoneNumberChangeToken(credentials).pipe(take(1)).subscribe(
+            (success: boolean) => {
+                this.phoneChangeRequestAlert = {
+                    type: success ? 'success': 'error',
+                    message: success ? 'A SMS with an OTP has been sent to the new phone number. Please enter the code.':
+                     'An error occurred while sending an OTP to the new phone number. Please try again later.'
+                };
+                this.showChangePhoneRequestAlert = true;
+                this.changePhoneForm.enable();
+                this.changePhoneNgForm.resetForm();   
+                this.changePhoneForm.get('country').setValue('us');
+
+                //Initialize the timer
+                if(success) {
+                    this.phoneChangeExpiry = new Date().getTime() + 3 * 60 * 1000;
+                    localStorage.setItem('phoneChangeExpiry', this.phoneChangeExpiry.toString());
+                    localStorage.setItem('newPhoneNumber', credentials.newPhone);
+                    //Initialize the countdown
+                    this.initPhoneChangeCountdown(3 * 60);
+                }
             }
-        }
+        );
+    }
+
+    /**
+     * Init countdown for email change token submit
+    */
+      initPhoneChangeCountdown(remainingSeconds: number):void {
+        this.phoneChangeCountdown = remainingSeconds;
+        
+        timer(1000, 1000).pipe(
+            takeWhile(() => this.phoneChangeCountdown > 0),
+            takeUntil(this._unsubscribeAll),
+            tap(() => {
+                this.phoneChangeCountdown--; 
+                if(this.phoneChangeCountdown <= 0) {
+                    this.phoneChangeExpiry = null;
+                    localStorage.removeItem('phoneChangeExpiry');
+                    localStorage.removeItem('newPhoneNumber');
+                    this.showChangePhoneRequestAlert = false;
+                }
+            })
+        ).subscribe();
     }
 
     /**
     * Cancel phone change
     */
     cancelPhoneChange(): void {
-        this.accountSecurity.phoneChangeInProgress = false;
-        this.accountSecurity.phoneChangeSuccess = null;
-        this.changePhoneForm.reset();
-        this.changeEmailVerificationForm.reset();
+        this.changePhoneNgForm.resetForm();
+        this.changePhoneForm.get('country').setValue('us');
+        this.showChangePhoneRequestAlert = false;
     }
 
+    /**
+     * Submit the OTP token and do the phone number change
+     */
+     onPhoneChangeTokenSubmit(): void {
+        if (this.changePhoneVerificationForm.invalid) {
+            this.changePhoneVerificationForm.markAllAsTouched();
+            return;
+        }
 
+        this.showChangePhoneVerificaionAlert = false;
+
+        this.changePhoneVerificationForm.disable();
+
+        let credentials = this.changePhoneVerificationForm.value;
+        credentials.newPhone = localStorage.getItem('newPhoneNumber');
+
+        this._accountSecurityService.changePhoneNumber(credentials).pipe(take(1)).subscribe(
+            (success: boolean) => {
+                this.phoneChangeVerificaionAlert = {
+                    type: success ? 'success': 'error',
+                    message: success ? 'Your phone number has been changed successfully.':
+                     'The code is invalid or the phone number is unavailable.'
+                };
+                this.showChangePhoneVerificaionAlert = true;
+                this.changePhoneVerificationForm.enable();
+                this.changePhoneVerificationNgForm.resetForm();   
+
+                if(success) {
+                    this.phoneChangeCountdown = 0;
+                    this.phoneChangeExpiry = null;
+                    localStorage.removeItem('phoneChangeExpiry');
+                    localStorage.removeItem('newPhoneNumber');
+                    this.showChangePhoneRequestAlert = false;
+                }
+                //Refresh the access token
+                this._authService.refreshUserTokens().pipe(take(1)).subscribe();
+            }
+        );
+    }    
+
+    /**
+    * Cancel email change token submit
+    */
+    cancelPhoneChangeTokenSubmit(): void {
+        this.changePhoneVerificationNgForm.resetForm();
+        this.showChangePhoneVerificaionAlert = false;
+        this.phoneChangeExpiry = null;
+        localStorage.removeItem('phoneChangeExpiry');
+        localStorage.removeItem('newPhoneNumber');
+
+        //Clear previous alerts (if any)
+        this.showChangePhoneRequestAlert = false;            
+    }
+
+    /**
+     * Check the email change status from local storage.
+     */
+    private checkPhoneChangeStatus(): void {
+            if(localStorage.getItem('phoneChangeExpiry')) {
+                try {
+                    const expiry = parseInt(localStorage.getItem('phoneChangeExpiry'));
+                    //If token is not expired
+                    if(new Date().getTime() <= expiry) {
+                        this.phoneChangeExpiry = expiry;
+    
+                        //Initialize the counter
+                        const remainingSeconds = Math.floor((expiry - new Date().getTime())/1000);
+                        this.initPhoneChangeCountdown(remainingSeconds);
+                    }
+                    else {
+                        this.phoneChangeExpiry = null;
+                        localStorage.removeItem('phoneChangeExpiry');
+                        localStorage.removeItem('newPhoneNumber');
+                    }
+    
+                }
+                catch{
+                    localStorage.removeItem('phoneChangeExpiry');
+                    localStorage.removeItem('newPhoneNumber');
+                }
+            }
+        }
 
     /**
      * Get country info by iso code
@@ -608,58 +808,6 @@ export class SettingsSecurityComponent implements OnInit, AfterViewInit {
      */
     trackByFn(index: number, item: any): any {
         return item.id || index;
-    }
-
-
-    /**
-     * Check the email change status from local storage.
-     */
-    private checkEmailChangeStatus(): void {
-        if(localStorage.getItem('emailChangeExpiry')) {
-            try {
-                const expiry = parseInt(localStorage.getItem('emailChangeExpiry'));
-                //If token is not expired
-                if(new Date().getTime() <= expiry) {
-                    this.emailChangeExpiry = expiry;
-
-                    //Initialize the counter
-                    const remainingSeconds = Math.floor((expiry - new Date().getTime())/1000);
-                    this.initEmailChangeCountdown(remainingSeconds);
-                }
-                else {
-                    this.emailChangeExpiry = null;
-                    localStorage.removeItem('emailChangeExpiry');
-                    localStorage.removeItem('newEmailAddress');
-                }
-
-            }
-            catch{
-                localStorage.removeItem('emailChangeExpiry');
-                localStorage.removeItem('newEmailAddress');
-
-            }
-        }
-    }
-
-    /**
-     * Init countdown for email change token submit
-     */
-    initEmailChangeCountdown(remainingSeconds: number):void {
-        this.emailChangeCountdown = remainingSeconds;
-        
-        timer(1000, 1000).pipe(
-            takeWhile(() => this.emailChangeCountdown > 0),
-            takeUntil(this._unsubscribeAll),
-            tap(() => {
-                this.emailChangeCountdown--; 
-                if(this.emailChangeCountdown <= 0) {
-                    this.emailChangeExpiry = null;
-                    localStorage.removeItem('emailChangeExpiry');
-                    localStorage.removeItem('newEmailAddress');
-                    this.showChangeEmailRequestAlert = false;
-                }
-            })
-        ).subscribe();
     }
 
 

@@ -1,3 +1,4 @@
+import { AuthStatus } from './../../../../../core/auth/auth-types';
 import { fuseAnimations } from './../../../../../../@fuse/animations/public-api';
 import { FuseAlertType } from '@fuse/components/alert';
 import { take, takeUntil } from 'rxjs/operators';
@@ -9,6 +10,7 @@ import { FormBuilder, FormGroup, NgForm, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { UserType } from 'app/core/auth/auth-types';
+import { AuthService } from 'app/core/auth/auth.service';
 
 @Component({
     selector: 'settings-account',
@@ -51,6 +53,7 @@ export class SettingsProfileComponent implements OnInit {
         message: 'Save failed! Please try again later.'
     };
     showAlert: boolean = false;
+    authStatus: AuthStatus;
 
     /**
      * Constructor
@@ -59,7 +62,8 @@ export class SettingsProfileComponent implements OnInit {
         private _formBuilder: FormBuilder,
         private _changeDetectorRef: ChangeDetectorRef,
         private _activatedRoute: ActivatedRoute,
-        private _userProfileService: UserProfileService
+        private _userProfileService: UserProfileService,
+        private _authService: AuthService
     ) {
     }
 
@@ -85,6 +89,13 @@ export class SettingsProfileComponent implements OnInit {
             this._activatedRoute.snapshot.data['accountSettings'].profile.info = profile;
             this._changeDetectorRef.markForCheck();
         });  
+
+        //Auth status
+        this._authService.authStatus.pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe((authStatus: AuthStatus) => {
+            this.authStatus = authStatus
+        });
     }
 
     /**
