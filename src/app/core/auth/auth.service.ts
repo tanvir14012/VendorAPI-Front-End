@@ -91,6 +91,28 @@ export class AuthService {
     }
 
     /**
+     * 
+     * Sign-in using two FA token
+     */
+    signInByTwoFAToken(credentials: { userId: number, verificationToken: string, jwtForAuthenticator: string,
+         rememberMe: boolean}): Observable<any> {
+        return this._httpClient.post(`${environment.ApiRoot}/account/signInUsingTwoFAToken`, credentials).pipe(
+            switchMap((signinResult: any) => {
+
+                if(signinResult.succeeded) {
+                    this.accessToken = signinResult.accessToken;
+                    const authStatus = this.populateAuthStatus(signinResult.accessToken);
+                    if(authStatus) {
+                        this._authStatus$.next(authStatus);
+                    }
+                }
+                // Return a new observable with the response
+                return of(signinResult);
+            })
+        );
+    }
+
+    /**
      * Get an access token from the refresh token, rotate the refresh token.
      */
     refreshUserTokens(): Observable<any> {
@@ -120,7 +142,7 @@ export class AuthService {
                     )
                 }),
                 catchError(() => {
-                    localStorage.removeItem('accessToken');
+                    localStorage.clear();
                     // Navigate to root route
                     this._router.navigate(['']);
                     location.reload();
@@ -147,7 +169,7 @@ export class AuthService {
                     }
                     else if (refreshResult.signedOut) {
                         // Remove the access token from the local storage
-                        localStorage.removeItem('accessToken');
+                        localStorage.clear();
                         // Navigate to root route
                         this._router.navigate(['']);
                         location.reload();
@@ -179,8 +201,8 @@ export class AuthService {
                     return of(err.status === 401);
                 }),
                 finalize(() => {
-                    // Remove the access token from the local storage
-                    localStorage.removeItem('accessToken');
+                    // Remove the access token and other state data from the local storage
+                    localStorage.clear();
                 })
             );
 
@@ -212,7 +234,7 @@ export class AuthService {
                 }
                 else if(result.isSignedOut) {
                     // Remove the access token from the local storage
-                    localStorage.removeItem('accessToken');
+                    localStorage.clear();
                     // Navigate to root route
                     this._router.navigate(['']);
                     location.reload();
@@ -279,24 +301,6 @@ export class AuthService {
         // Check the access token availability
         if (!this.accessToken) {
 
-            //Check 2FA status
-            const twoFA = localStorage.getItem('twoFA');
-            if(twoFA) {
-                const tokenObj = JSON.parse(twoFA);
-                if(tokenObj.token && tokenObj.expiry) {
-                    //If 2fa token expired
-                    if(new Date().getTime() > tokenObj.expiry) {
-                        localStorage.removeItem('twoFA');
-                    }
-
-                    else {
-                        this._authStatus$.next({
-                            signInStatus: SignInStatus.RequiresTwoFactor
-                        });
-                    }
-                }
-            }
-
             this._authStatus$.next({
                 signInStatus: SignInStatus.Unauthenticated
             });
@@ -310,7 +314,7 @@ export class AuthService {
             }
             else {
                 // Remove the access token from the local storage
-                localStorage.removeItem('accessToken');
+                localStorage.clear();
 
                 this._authStatus$.next({
                     signInStatus: SignInStatus.Unauthenticated
@@ -332,7 +336,7 @@ export class AuthService {
             let authStatus: AuthStatus = {
                 signInStatus: accessTokenPayload.isSessionLocked === "true" ? 
                     SignInStatus.SessionLocked: SignInStatus.Authenticated,
-                userId: accessTokenPayload.nameid,
+                userId: parseInt(accessTokenPayload.nameid),
                 userEmail: accessTokenPayload.email,
                 userPhone: accessTokenPayload.phoneNumber,
                 claims: accessTokenPayload.claims,

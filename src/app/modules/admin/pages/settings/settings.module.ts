@@ -1,4 +1,4 @@
-import { CountdownPipe } from './security/countdown.pipe';
+import { CountdownPipe } from '../../../../shared/countdown.pipe';
 import { CommonModule } from '@angular/common';
 import { FuseCardModule } from '@fuse/components/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -38,8 +38,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
         SettingsPlanBillingComponent,
         SettingsNotificationsComponent,
         SettingsTeamComponent,
-        SettingsSiteConfigurationComponent,
-        CountdownPipe
+        SettingsSiteConfigurationComponent
     ],
     imports     : [
         RouterModule.forChild(settingsRoutes),

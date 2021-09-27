@@ -10,23 +10,16 @@
             <div class="mt-8 text-4xl font-extrabold tracking-tight leading-tight">Sign in</div>
             <div class="flex items-baseline mt-0.5 font-medium">
                 <div>Don't have an account?</div>
-                <a
-                    class="ml-1 text-primary-500 hover:underline"
-                    [routerLink]="['/sign-up']">Sign up
+                <a class="ml-1 text-primary-500 hover:underline" [routerLink]="['/sign-up']">Sign up
                 </a>
             </div>
 
             <!-- Alert -->
-            <fuse-alert
-                class="mt-8 -mb-4"
-                *ngIf="showAlert"
-                [appearance]="'outline'"
-                [showIcon]="false"
-                [type]="alert.type"
-                [@shake]="alert.type === 'error'">
+            <fuse-alert class="mt-8 -mb-4" *ngIf="showAlert && !twoFactorSignOption" [appearance]="'outline'"
+                [showIcon]="false" [type]="alert.type" [@shake]="alert.type === 'error'">
                 <div class="text-lg">{{alert.message}}</div>
                 <ng-container class="mt-2" *ngIf="alert.validationMessages">
-                    <ul class="w-full" >
+                    <ul class="w-full">
                         <li class="flex text-md" *ngFor="let message of alert.validationMessages">
                             <mat-icon mat-list-icon [svgIcon]="'arrow_right'"></mat-icon>
                             <div>{{message}}</div>
@@ -35,28 +28,23 @@
                 </ng-container>
                 <ng-container *ngIf="lastEmail">
                     <div class="mt-4">
-                        <a
-                            class="text-primary-500 hover:underline"
-                            [routerLink]="['/resend-email-verification', {email: lastEmail, skipLocationChange: true}]">Resend email verification
+                        <a class="text-primary-500 hover:underline"
+                            [routerLink]="['/resend-email-verification', {email: lastEmail, skipLocationChange: true}]">Resend
+                            email verification
                         </a>
                     </div>
                 </ng-container>
             </fuse-alert>
 
             <!-- Sign in form -->
-            <form
-                class="mt-8"
-                [formGroup]="signInForm"
-                #signInNgForm="ngForm">
+            <form *ngIf="!twoFactorSignOption" class="mt-8" [formGroup]="signInForm" #signInNgForm="ngForm">
 
                 <!-- Email field -->
                 <mat-form-field class="w-full">
                     <mat-label>Email address</mat-label>
-                    <input
-                        id="email"
-                        matInput
-                        [formControlName]="'email'">
-                    <mat-error *ngIf="signInForm.get('email').hasError('required') 
+                    <input id="email" matInput [formControlName]="'email'">
+                    <mat-error
+                        *ngIf="signInForm.get('email').hasError('required') 
                          && (signInForm.get('email').dirty || signInForm.get('email').touched || signInNgForm.submitted)">
                         Email address is required
                     </mat-error>
@@ -73,28 +61,19 @@
                 <!-- Password field -->
                 <mat-form-field class="w-full">
                     <mat-label>Password</mat-label>
-                    <input
-                        id="password"
-                        matInput
-                        type="password"
-                        [formControlName]="'password'"
-                        #passwordField>
-                    <button
-                        mat-icon-button
-                        type="button"
+                    <input id="password" matInput type="password" [formControlName]="'password'" #passwordField>
+                    <button mat-icon-button type="button"
                         (click)="passwordField.type === 'password' ? passwordField.type = 'text' : passwordField.type = 'password'"
                         matSuffix>
-                        <mat-icon
-                            class="icon-size-5"
-                            *ngIf="passwordField.type === 'password'"
+                        <mat-icon class="icon-size-5" *ngIf="passwordField.type === 'password'"
                             [svgIcon]="'heroicons_solid:eye'"></mat-icon>
-                        <mat-icon
-                            class="icon-size-5"
-                            *ngIf="passwordField.type === 'text'"
+                        <mat-icon class="icon-size-5" *ngIf="passwordField.type === 'text'"
                             [svgIcon]="'heroicons_solid:eye-off'"></mat-icon>
                     </button>
-                    <mat-hint *ngIf="signInForm.get('password').invalid">Password should contain a lowercase and a uppercase letter, a digit and a non-alphanumeric character</mat-hint>
-                    <mat-error *ngIf="signInForm.get('password').hasError('required')  
+                    <mat-hint *ngIf="signInForm.get('password').invalid">Password should contain a lowercase and a
+                        uppercase letter, a digit and a non-alphanumeric character</mat-hint>
+                    <mat-error
+                        *ngIf="signInForm.get('password').hasError('required')  
                         && (signInForm.get('password').dirty || signInForm.get('password').touched || signInNgForm.submitted)">
                         Password is required
                     </mat-error>
@@ -108,39 +87,91 @@
                     </mat-error>
                     <mat-error *ngIf="signInForm.get('password').hasError('pattern')
                        && (signInForm.get('password').dirty || signInForm.get('password').touched)">
-                        Please enter a lowercase and a uppercase letter, a digit and a non-alphanumeric character at least
+                        Please enter a lowercase and a uppercase letter, a digit and a non-alphanumeric character at
+                        least
                     </mat-error>
                 </mat-form-field>
 
                 <!-- Actions -->
                 <div class="inline-flex items-end justify-between w-full mt-1.5">
-                    <mat-checkbox
-                        [color]="'primary'"
-                        [formControlName]="'rememberMe'">
+                    <mat-checkbox [color]="'primary'" [formControlName]="'rememberMe'">
                         Remember me
                     </mat-checkbox>
-                    <a
-                        class="text-md font-medium text-primary-500 hover:underline"
+                    <a class="text-md font-medium text-primary-500 hover:underline"
                         [routerLink]="['/forgot-password']">Forgot password?
                     </a>
                 </div>
 
                 <!-- Submit button -->
-                <button
-                    class="fuse-mat-button-large w-full mt-6"
-                    mat-flat-button
-                    type="button"
-                    [color]="'primary'"
-                    [disabled]="signInForm.disabled"
-                    (click)="signIn()">
+                <button class="fuse-mat-button-large w-full mt-6" mat-flat-button type="button" [color]="'primary'"
+                    [disabled]="signInForm.disabled" (click)="signIn()">
                     <span *ngIf="!signInForm.disabled">
                         Sign in
                     </span>
-                    <mat-progress-spinner
-                        *ngIf="signInForm.disabled"
-                        [diameter]="24"
-                        [mode]="'indeterminate'"></mat-progress-spinner>
+                    <mat-progress-spinner *ngIf="signInForm.disabled" [diameter]="24" [mode]="'indeterminate'">
+                    </mat-progress-spinner>
                 </button>
+            </form>
+
+
+            <!-- Two FA code submit form -->
+            <form *ngIf="twoFactorSignOption" class="mt-8" [formGroup]="twoFAForm" #twoFANgForm="ngForm">
+                <!-- Email field -->
+                <mat-form-field class="w-full">
+                    <mat-label>Two factor code (from {{twoFAProvider(twoFactorSignOption)}})</mat-label>
+                    <input id="token" matInput [formControlName]="'verificationToken'">
+                    <mat-error>
+                        A valid code is required
+                    </mat-error>
+                </mat-form-field>
+
+
+                <!-- Actions -->
+                <div class="inline-flex items-end justify-between w-full mt-1.5">
+                    <mat-checkbox [color]="'primary'" [formControlName]="'rememberMe'">
+                        Remember me
+                    </mat-checkbox>
+                    <mat-checkbox *ngIf="twoFactorSignOption == '0'" [color]="'primary'" [formControlName]="'isRecoveryToken'">
+                        Recovery code
+                    </mat-checkbox>
+                </div>
+                <div class="mt-4" *ngIf="twoFactorSignOption == '0'">
+                    <mat-hint >User a recovery code if your authenticator device is lost
+                        or the app is erased.</mat-hint>
+                </div>
+
+                <!-- Countdown timer-->
+                <ng-container *ngIf="twoFactorSignInCountdown > 0">
+                    <div class="w-full mt-2">
+                        <span class="text-secondary">Expires in: </span>
+                        <span class="text-xl font-semibold">{{twoFactorSignInCountdown | countdown}}</span>
+                    </div>
+                </ng-container>
+
+                <!-- 2FA alert -->
+                <fuse-alert class="mt-8" *ngIf="showTwoFAAlert" [appearance]="'outline'"
+                    [dismissible]="false" [showIcon]="false" [type]="twoFAAlert.type"
+                    [@shake]="twoFAAlert.type === 'error'">
+                    <div class="text-lg">{{twoFAAlert.message}}</div>
+                </fuse-alert>
+
+                <div class=" w-full mt-6 flex justify-between flex-row-reverse">
+                    <!-- Submit button -->
+                    <button mat-flat-button type="button" [color]="'primary'"
+                    [disabled]="twoFAForm.disabled" (click)="submitTwoFAToken()">
+                    <span *ngIf="!twoFAForm.disabled">
+                        Submit
+                    </span>
+                    <mat-progress-spinner *ngIf="twoFAForm.disabled" [diameter]="24" [mode]="'indeterminate'">
+                    </mat-progress-spinner>
+                    </button>
+
+                    <!-- Cancel button -->
+                    <button mat-button type="button" (click)="cancelTwoFactorSignIn()">
+                        Cancel
+                    </button>
+                </div>
+                
             </form>
         </div>
     </div>
