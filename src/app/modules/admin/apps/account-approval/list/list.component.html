@@ -39,7 +39,7 @@
                             <!-- Dates -->
                             <div class="flex items-start mt-2">
                                 <div class="flex-auto">
-                                    <mat-form-field appearance="fill" class="w-80">
+                                    <mat-form-field appearance="fill" class="w-90">
                                         <mat-label>Filter by date range</mat-label>
                                         <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
                                             <input matStartDate formControlName="start" placeholder="Start date"
@@ -48,6 +48,9 @@
                                                 (dateChange)="dateRangeChange(dateRangeStart, dateRangeEnd);">
                                         </mat-date-range-input>
                                         <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <button mat-icon-button matSuffix (click)="resetDateRange()">
+                                            <mat-icon [svgIcon]="'cancel'"></mat-icon>
+                                        </button>
                                         <mat-date-range-picker #picker></mat-date-range-picker>
                                     </mat-form-field>
                                 </div>
@@ -91,18 +94,21 @@
                             <mat-menu #actionsMenu="matMenu">
                                 <div class="flex flex-col">
                                     <div mat-menu-item class="sm:block md:hidden h-full"
-                                        (click)="$event.stopPropagation()">
+                                        >
                                         <!-- Dates -->
                                         <div class="mt-2 w-full">
                                             <mat-form-field appearance="fill" class="w-full">
                                                 <mat-label>Filter by date range</mat-label>
-                                                <mat-date-range-input [rangePicker]="pickerSm">
-                                                    <input matStartDate placeholder="Start date" #dateRangeStart>
-                                                    <input matEndDate placeholder="End date" #dateRangeEnd
-                                                        (dateChange)="dateRangeChange(dateRangeStart, dateRangeEnd);">
+                                                <mat-date-range-input [formGroup]="range" [rangePicker]="pickerSm">
+                                                    <input matStartDate formControlName="start" placeholder="Start date" #dateRangeStartSm>
+                                                    <input matEndDate formControlName="end" placeholder="End date" #dateRangeEndSm
+                                                        (dateChange)="dateRangeChange(dateRangeStartSm, dateRangeEndSm);">
                                                 </mat-date-range-input>
                                                 <mat-datepicker-toggle matSuffix [for]="pickerSm">
                                                 </mat-datepicker-toggle>
+                                                <button mat-icon-button matSuffix (click)="resetDateRange()">
+                                                    <mat-icon [svgIcon]="'cancel'"></mat-icon>
+                                                </button>
                                                 <mat-date-range-picker #pickerSm></mat-date-range-picker>
                                             </mat-form-field>
                                         </div>
@@ -145,9 +151,61 @@
 
                 <!-- account-approval list -->
                 <div>
-                    <ng-container *ngIf="accountApproval$ | async as accountApprovals">
-                        <ng-container *ngIf="accountApprovals.length; else noAccountApproval">
-                            <ng-container
+                        <!-- Realtime requests -->
+                        <ng-container *ngIf= "(realtimeApprovalRequests | async).length > 0">
+                            <div class="bg-blue-100 mb-4 border-b">
+                                <div class="py-2 font-medium text-secondary text-2xl ml-8">Live requests</div>
+                                <div>
+                                    <ng-container
+                                        *ngFor="let accountApproval of (realtimeApprovalRequests | async); let i = index; trackBy: trackByFn">
+                                        <a class="z-20 flex items-center px-6 py-4 md:px-8 cursor-pointer border-b w-full"
+                                            [ngClass]="{'hover:bg-gray-100 dark:hover:bg-hover': !selectedAccountApproval || selectedAccountApproval.id !== accountApproval.id,
+                                                        'bg-primary-50 dark:bg-hover': selectedAccountApproval && selectedAccountApproval.id === accountApproval.id}"
+                                            [routerLink]="['./', accountApproval.id]">
+                                            <div
+                                                class="flex flex-0 items-center justify-center w-10 h-10 rounded-full overflow-hidden">
+                                                <ng-container>
+                                                    <mat-icon
+                                                        [svgIcon]="accountApproval?.isRead !== true ? 'mark_email_unread': 'mark_email_read'">
+                                                    </mat-icon>
+                                                </ng-container>
+                                            </div>
+                                            <div class="min-w-0 ml-4 w-full">
+                                                <div class="font-medium leading-5 truncate flex justify-between flex-wrap">
+                                                    <div class="flex justify-between flex-wrap"
+                                                        [ngClass]="{'font-bold': accountApproval?.isRead !== true}">
+                                                        <div class="mr-4 truncate py-1">{{accountApproval.businessName}}</div>
+                                                        <div class="mr-4 truncate py-1">{{accountApproval.customerName}}</div>
+                                                    </div>
+                                                    <div class="flex justify-start flex-wrap">
+                                                        <div class="py-1">
+                                                            <span
+                                                                class="inline-flex items-center font-bold text-xs px-2.5 py-0.5 rounded-full tracking-wide uppercase"
+                                                                [ngClass]="{'bg-red-200 text-red-800 dark:bg-red-600 dark:text-red-50': accountApproval?.isApproved === false,
+                                                                            'bg-blue-200 text-blue-800 dark:bg-blue-600 dark:text-blue-50': accountApproval?.isApproved === null,
+                                                                            'bg-green-200 text-green-800 dark:bg-green-600 dark:text-green-50': accountApproval?.isApproved === true}">
+                                                                <span
+                                                                    class="leading-relaxed whitespace-nowrap">
+                                                                    {{accountApproval?.isApproved == null ? 'Pending': accountApproval?.isApproved ? 'Approved': 'Rejected'}}</span>
+                                                            </span>
+                                                        </div>
+                                                        <!-- Date -->
+                                                        <div class="text-sm whitespace-nowrap text-secondary ml-4 py-1"
+                                                            [ngClass]="{'font-bold': accountApproval?.isRead === false}">
+                                                            {{accountApproval?.dateCreated | date:'LLL dd'}}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </ng-container>
+                                </div>
+                            </div>
+                        </ng-container>
+
+
+                        <ng-container *ngIf="accountApprovals && accountApprovals.length; else noAccountApproval">
+                            <ng-container 
                                 *ngFor="let accountApproval of accountApprovals; let i = index; trackBy: trackByFn">
 
                                 <!-- accountApproval -->
@@ -159,34 +217,34 @@
                                         class="flex flex-0 items-center justify-center w-10 h-10 rounded-full overflow-hidden">
                                         <ng-container>
                                             <mat-icon
-                                                [svgIcon]="accountApproval?.readStatus === 'unread'? 'mark_email_unread': 'mark_email_read'">
+                                                [svgIcon]="accountApproval?.isRead !== true ? 'mark_email_unread': 'mark_email_read'">
                                             </mat-icon>
                                         </ng-container>
                                     </div>
                                     <div class="min-w-0 ml-4 w-full">
                                         <div class="font-medium leading-5 truncate flex justify-between flex-wrap">
                                             <div class="flex justify-between flex-wrap"
-                                                [ngClass]="{'font-bold': accountApproval?.readStatus === 'unread'}">
+                                                [ngClass]="{'font-bold': accountApproval?.isRead !== true}">
                                                 <div class="mr-4 truncate py-1">{{accountApproval.businessName}}</div>
-                                                <div class="mr-4 truncate py-1">{{accountApproval.firstName}}
-                                                    {{accountApproval.lastName}}</div>
+                                                <div class="mr-4 truncate py-1">{{accountApproval.customerName}}</div>
                                             </div>
                                             <div class="flex justify-start flex-wrap">
                                                 <div class="py-1">
                                                     <span
                                                         class="inline-flex items-center font-bold text-xs px-2.5 py-0.5 rounded-full tracking-wide uppercase"
-                                                        [ngClass]="{'bg-red-200 text-red-800 dark:bg-red-600 dark:text-red-50': accountApproval?.status === 'rejected',
-                                                                    'bg-blue-200 text-blue-800 dark:bg-blue-600 dark:text-blue-50': accountApproval?.status === 'pending',
-                                                                    'bg-green-200 text-green-800 dark:bg-green-600 dark:text-green-50': accountApproval?.status === 'approved'}">
+                                                        [ngClass]="{'bg-red-200 text-red-800 dark:bg-red-600 dark:text-red-50': accountApproval?.isApproved === false,
+                                                                    'bg-blue-200 text-blue-800 dark:bg-blue-600 dark:text-blue-50': accountApproval?.isApproved === null,
+                                                                    'bg-green-200 text-green-800 dark:bg-green-600 dark:text-green-50': accountApproval?.isApproved === true}">
                                                         <span
-                                                            class="leading-relaxed whitespace-nowrap">{{accountApproval?.status}}</span>
+                                                            class="leading-relaxed whitespace-nowrap">
+                                                            {{accountApproval?.isApproved == null ? 'Pending': accountApproval?.isApproved ? 'Approved': 'Rejected'}}</span>
                                                     </span>
                                                 </div>
 
                                                 <!-- Date -->
                                                 <div class="text-sm whitespace-nowrap text-secondary ml-4 py-1"
-                                                    [ngClass]="{'font-bold': accountApproval?.readStatus === 'unread'}">
-                                                    {{accountApproval?.createdDate | date:'LLL dd'}}
+                                                    [ngClass]="{'font-bold': accountApproval?.isRead === false}">
+                                                    {{accountApproval?.dateCreated | date:'LLL dd'}}
                                                 </div>
                                             </div>
                                         </div>
@@ -205,7 +263,6 @@
                                 </div>
                             </ng-container>
                         </ng-container>
-                    </ng-container>
 
                     <!-- No account-approval -->
                     <ng-template #noAccountApproval>

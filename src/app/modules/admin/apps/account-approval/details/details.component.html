@@ -7,8 +7,11 @@
         <div class="relative w-full flex items-center justify-end px-8 sm:px-12">
             <!-- Mark button -->
             <div class="flex items-center justify-end max-w-3xl mr-2 py-2">
-                <button mat-icon-button [matTooltip]="accountApproval?.readStatus === 'read'? 'Mark as read': 'Mark as unread'"  class="bg-accent-100 dark:bg-accent-700">
-                    <mat-icon class="text-white" [svgIcon]="accountApproval?.readStatus === 'read'? 'heroicons_solid:mail-open': 'mark_as_unread'"></mat-icon>
+                <button mat-icon-button 
+                    [matTooltip]="accountApproval?.isRead ? 'Mark as unread': 'Mark as read'" 
+                    class="bg-accent-100 dark:bg-accent-700"
+                    (click)="markReadStatus(accountApproval.id, !(accountApproval.isRead === true))">
+                    <mat-icon class="text-white" [svgIcon]="accountApproval?.isRead? 'heroicons_solid:mail-open': 'mark_as_unread'"></mat-icon>
                 </button>
             </div>
 
@@ -51,8 +54,8 @@
                                 <img
                                     class="max-h-60 object-contain"
                                     [alt]="'ID card image'"
-                                    [src]="accountApproval?.idDocPicture">
-                                <button mat-icon-button class="absolute bottom-6 right-6 bg-white" (click)="download(accountApproval?.idDocPicture);">
+                                    [src]="accountApproval?.identityImageBase64">
+                                <button mat-icon-button class="absolute bottom-6 right-6 bg-white" (click)="download(accountApproval?.identityImageBase64, 'ID_'+accountApproval.id);">
                                     <mat-icon>download</mat-icon>
                                 </button>
                             </div>
@@ -63,7 +66,7 @@
                     <ng-container>
                         <div class="flex sm:items-center">
                             <mat-icon [svgIcon]="'mat_solid:person'"></mat-icon>
-                            <div class="ml-6 leading-6">{{accountApproval?.firstName}} {{accountApproval?.lastName}}</div>
+                            <div class="ml-6 leading-6">{{accountApproval.userName}}</div>
                         </div>
                     </ng-container>
 
@@ -71,7 +74,7 @@
                     <ng-container>
                         <div class="flex sm:items-center">
                             <mat-icon [svgIcon]="'heroicons_outline:identification'"></mat-icon>
-                            <div class="ml-6 leading-6">{{accountApproval.idDocType}}: {{accountApproval.idNumber}}</div>
+                            <div class="ml-6 leading-6">{{accountApproval.identityDocType}}: {{accountApproval.idNumber}}</div>
                         </div>
                     </ng-container>
 
@@ -97,11 +100,9 @@
                                             [matTooltip]="getCountryByIso(accountApproval?.phoneNumber?.countryCode)?.name"
                                             [style.background]="'url(\'/assets/images/apps/account-approval/flags.png\') no-repeat 0 0'"
                                             [style.backgroundSize]="'24px 3876px'"
-                                            [style.backgroundPosition]="getCountryByIso(accountApproval?.phoneNumber?.countryCode)?.flagImagePos">
+                                            [style.backgroundPosition]="getCountryByIso(accountApproval?.country)?.flagImagePos">
                                         </div>
-                                        <div class="sm:ml-3 font-mono">{{getCountryByIso(accountApproval?.phoneNumber?.countryCode)?.code}}
-                                        </div>
-                                        <div class="ml-2.5 font-mono">{{accountApproval?.phoneNumber?.number}}</div>
+                                        <div class="ml-2.5 font-mono">{{accountApproval?.phoneNumber}}</div>
                                     </div>
                             </div>
                         </div>
@@ -111,7 +112,7 @@
                     <ng-container>
                         <div class="flex sm:items-center">
                             <mat-icon [svgIcon]="'heroicons_outline:location-marker'"></mat-icon>
-                            <div class="ml-6 leading-6">{{accountApproval?.address1}} {{accountApproval?.address2}}</div>
+                            <div class="ml-6 leading-6">{{accountApproval?.addressLine1}} {{accountApproval?.addressLine2}}</div>
                         </div>
                     </ng-container>
 
@@ -119,7 +120,7 @@
                     <ng-container>
                         <div class="flex sm:items-center">
                             <mat-icon [svgIcon]="'heroicons_outline:location-marker'"></mat-icon>
-                            <div class="ml-6 leading-6">{{accountApproval?.city}}, {{accountApproval?.state}}, {{accountApproval?.zip}}, {{accountApproval?.country}}</div>
+                            <div class="ml-6 leading-6">{{accountApproval?.city | titlecase}}, {{accountApproval?.state | uppercase}}, P-{{accountApproval?.zip}}, {{accountApproval?.country | uppercase}}</div>
                         </div>
                     </ng-container>
 
@@ -132,48 +133,50 @@
                     </ng-container>
 
                     <!-- Attachments -->
-                    <ng-container *ngIf="accountApproval?.documentAttachments && accountApproval?.documentAttachments?.length > 0">
+                    <ng-container *ngIf="accountApproval?.companyDocuments && accountApproval?.companyDocuments?.length > 0">
                         <div class="flex flex-col w-full">
                             <!-- Title -->
                             <div class="flex items-center mt-12">
                                 <mat-icon
                                     class="icon-size-5"
                                     [svgIcon]="'heroicons_solid:paper-clip'"></mat-icon>
-                                <div class="ml-2 font-semibold">{{accountApproval?.documentAttachments.length}} Attachments</div>
+                                <div class="ml-2 font-semibold">{{accountApproval?.companyDocuments.length}} Attachments</div>
                             </div>
 
                             <!-- Files -->
                             <div class="flex flex-col flex-wrap -m-3 mt-3">
-                                <ng-container *ngFor="let attachment of accountApproval?.documentAttachments; let i=index;">
-                                    <div class="flex items-center m-3">
+                                <ng-container *ngFor="let attachment of accountApproval?.companyDocuments; let i=index;">
+                                    <div *ngIf="attachment !== null" class="flex items-center m-3">
                                         <div
                                             class="flex items-center justify-center w-10 h-10 rounded-md overflow-hidden bg-primary-100">
                                             <div class="text-sm font-semibold text-primary-500-800">
-                                                {{attachment?.name?.split('.')?.pop()?.toUpperCase()}}
+                                                {{attachment?.fileExt}}
                                             </div>
                                         </div>
                                         <!-- File info -->
                                         <div class="ml-3">
                                             <div
                                                 class="text-md font-medium truncate max-v max-w-40 sm:max-w-100"
-                                                [title]="attachment?.name">
-                                                {{attachment?.name}}
+                                                [title]="attachment?.fileName">
+                                                {{attachment?.fileName}}
                                             </div>
                                             <div
                                                 class="text-sm font-medium truncate text-secondary"
-                                                [title]="attachment?.size">
-                                                {{attachment.size / (1024*1024) | number:'1.0-2'}} MB
+                                                [title]="attachment?.fileSize">
+                                                {{attachment.fileSize| number:'1.0-2'}} MB
                                             </div>
                                         </div>
 
                                         <!-- Action -->
                                         <div class="ml-auto flex">
                                             <!-- Preview -->
-                                            <button mat-icon-button color="primary" (click)="preview(i)" class="mr-2">
+                                            <button 
+                                                [disabled]="['.doc', '.docx', '.xls', '.xlsx'].includes(attachment.fileExt)"
+                                                 mat-icon-button color="primary" (click)="preview(attachment, attachment.fileExt)" class="mr-2">
                                                 <mat-icon>preview</mat-icon>
                                             </button>
                                             <!-- Download -->
-                                            <button mat-icon-button color="primary" (click)="download('assets/pdfExportDemo.pdf')">
+                                            <button mat-icon-button color="primary" (click)="downloadFile(attachment.filePath, attachment.fileName)">
                                                 <mat-icon>download</mat-icon>
                                             </button>
 
@@ -190,6 +193,7 @@
                             <div class="py-2">Message to customer</div>
                              <!-- Message Body -->
                             <quill-editor
+                                [(ngModel)]="verdictMessage"
                                 class="mt-2"
                                 [modules]="quillModules">
                             </quill-editor>
@@ -199,8 +203,14 @@
                     <!-- Approve action -->
                     <ng-container>
                         <div class="flex items-center">
-                            <button [disabled]="accountApproval?.status !== 'pending'" mat-raised-button color="primary" (click)="accept()" class="mr-2">Accept</button>
-                            <button [disabled]="accountApproval?.status !== 'pending'" mat-raised-button color="warn" (click)="reject()" class="mr-2">Reject</button>
+                            <button [disabled]="accountApproval?.isApproved !== null"
+                                 mat-raised-button color="primary"
+                                 (click)="accept()" class="mr-2">Approve
+                            </button>
+                            <button [disabled]="accountApproval?.isApproved !== null"
+                                 mat-raised-button color="warn" 
+                                 (click)="reject()" class="mr-2">Reject
+                            </button>
                         </div>
                     </ng-container>
                 </div>
@@ -215,7 +225,8 @@
         <!-- Header -->
         <div class="relative w-full flex items-center justify-end px-8 sm:px-12">
             <div class="flex items-center justify-end max-w-3xl mt-2 mr-3">
-                <button mat-icon-button [matTooltip]="'Close preview'" (click)="closePreview();" class="bg-accent-100 dark:bg-accent-700">
+                <button mat-icon-button [matTooltip]="'Close preview'" (click)="closePreview();" 
+                    class="bg-accent-100 dark:bg-accent-700">
                     <mat-icon class="text-white" [svgIcon]="'heroicons_outline:x'"></mat-icon>
                 </button>
             </div>
@@ -223,11 +234,30 @@
       
         <!-- Document viewer -->
         <div class="mt-2 h-100">
-                <pdf-viewer [src]="pdfSrc"
-                    [original-size]="false"
-                    [render-text]="true"
-                    style="display: block;">
-                </pdf-viewer>
+
+                <ngx-extended-pdf-viewer
+                    *ngIf="previewDoc.fileExt == '.pdf'"
+                    [base64Src]="previewDoc?.src"
+                    [height]="'80vh'" 
+                    [useBrowserLocale]="true" 
+                    [textLayer]="true" 
+                    [showHandToolButton]="true">
+                </ngx-extended-pdf-viewer>
+
+                <!-- Image -->
+                <div class="flex items-center"
+                    *ngIf="['.png', '.jpg', '.jpeg', '.gif', '.tiff'].includes(previewDoc.fileExt)">
+                    <div class="w-full relative flex flex-0 items-center justify-center mr-6 rounded overflow-hidden border">
+                        <img
+                            class="max-h-60 object-contain"
+                            [alt]="'Document image'"
+                            [src]="previewDoc?.src">
+                        <button mat-icon-button class="absolute bottom-6 right-6 bg-white"
+                         (click)="download(previewDoc.src, 'preview.png')">
+                            <mat-icon>download</mat-icon>
+                        </button>
+                    </div>
+                </div>
         </div>
     </ng-container>
 </div>

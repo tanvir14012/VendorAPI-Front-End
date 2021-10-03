@@ -1,19 +1,24 @@
+import { fuseAnimations } from './../../../../@fuse/animations/public-api';
+import { members } from './../../../mock-api/apps/tasks/data';
 import { state } from '@angular/animations';
-import { takeUntil } from 'rxjs/operators';
+import { take, takeUntil } from 'rxjs/operators';
 import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { DocumentFileInputErrorMatcher, IdPictureInputErrorMatcher } from './file-input-error-matcher';
 import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormControl, FormArray, NgForm } from '@angular/forms';
 import { countries, Country } from './account-setup.types';
 import { Subject } from 'rxjs';
 import { MatStepper } from '@angular/material/stepper';
+import { AccountVerificationService } from 'app/core/account-verification/account-verification.service';
 
 @Component({
     selector: 'forms-wizards',
     templateUrl: './account-setup.component.html',
-    encapsulation: ViewEncapsulation.None
+    encapsulation: ViewEncapsulation.None,
+    animations: fuseAnimations
 })
 export class AccountSetupComponent implements OnInit {
+    @ViewChild('legalDocumentNgForm') legalDocumentNgForm: NgForm;
     @ViewChild('stepper') stepper: MatStepper;
     legalDocumentForm: FormGroup;
     IDInputErrorMatcher: IdPictureInputErrorMatcher;
@@ -29,13 +34,21 @@ export class AccountSetupComponent implements OnInit {
     countryList: Country[] = countries;
     yearlyBilling: boolean = true;
 
+    verificatonStatus:any = null;
+    showAlert: boolean = false;
+    alert: { type: string, message: string} = {
+        type: '',
+        message: ''
+    };
+
     /**
      * Constructor
      */
     constructor(
         private _formBuilder: FormBuilder,
         private _changeDetectorRef: ChangeDetectorRef,
-        private _breakPointObserver: BreakpointObserver) {
+        private _breakPointObserver: BreakpointObserver,
+        private _accountVerificationService: AccountVerificationService) {
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -46,24 +59,68 @@ export class AccountSetupComponent implements OnInit {
      * On init
      */
     ngOnInit(): void {
+
+        //Get current satus
+        this._accountVerificationService.getVerificationStatus().pipe(take(1)).subscribe();
+        this._accountVerificationService.verificationStatus$.pipe(
+            takeUntil(this._unsubscribeAll)
+        ).subscribe((status) => {
+            this.verificatonStatus = status;
+            if(status && status.isApproved === null) {
+                this.legalDocumentNgForm.resetForm();
+                this.stepper.selectedIndex = 1;
+            }
+            else if(status && status.isApproved === true) {
+                this.legalDocumentNgForm.resetForm();
+                this.stepper.selectedIndex = 1;
+            }
+
+            else if(status && status.isApproved === false) {
+                this.showAlert = true;
+                this.alert = {
+                    type: 'error',
+                    message: `We failed to verify your information. You have ${3 - status.retryCount} retries left.</br>` + status.approverMessage
+                };
+
+                //Populate the form with previous value
+                this.legalDocumentForm.get('identityDocType').setValue(status.identityDocType == 'NationalIDCard' ? '0':
+                    status.identityDocType == 'DriverLicense' ? '1': '2');
+                this.legalDocumentForm.get('identityNumber').setValue(status.idNumber);
+                this.legalDocumentForm.get('businessName').setValue(status.businessName);
+                this.legalDocumentForm.get('country').setValue(this.countryList.find(c => c.iso == status.country));
+                this.legalDocumentForm.get('businessAddress1').setValue(status.addressLine1);
+                this.legalDocumentForm.get('businessAddress2').setValue(status.addressLine2);
+                this.legalDocumentForm.get('city').setValue(status.city);
+                this.legalDocumentForm.get('state').setValue(status.state);
+                this.legalDocumentForm.get('zip').setValue(status.zip);
+                this.legalDocumentForm.get('website').setValue(status.website);
+                this.legalDocumentForm.get('phoneNumber')
+                    .setValue(status.phoneNumber?.substr
+                        (this.countryList.find(c => c.iso == status.country)?.code?.length));
+                this.legalDocumentForm.updateValueAndValidity();
+
+            }
+        });
+
         /**
          * Form definitions
          */
         this.legalDocumentForm = this._formBuilder.group({
-            identityDocType: ['1', [Validators.required]],
+            identityDocType: ['0', [Validators.required]],
             identityDoc: ['', [Validators.required]],
-            identityDocFileName: ['', [Validators.required]],
-            identityNumber: ['', [Validators.required]],
+            identityDocFileName: ['', [Validators.required, Validators.maxLength(50)]],
+            identityNumber: ['', [Validators.required, Validators.maxLength(20)]],
             country: [this.countryList[224], [Validators.required]],
-            businessName: ['', [Validators.required]],
+            businessName: ['', [Validators.required, Validators.maxLength(100)]],
             businessAddress1: ['', [Validators.required]],
             businessAddress2: ['', [Validators.required]],
-            city: ['', [Validators.required]],
-            state: ['', [Validators.required]],
-            zip: ['', [Validators.required]],
-            phoneNumber: ['', [Validators.required]],
-            website: ['', [Validators.required]],
-            legalDocs: this._formBuilder.array([], [Validators.required, Validators.minLength(1), Validators.maxLength(this.MAX_DOC_COUNT)])
+            city: ['', [Validators.required, Validators.maxLength(50)]],
+            state: ['', [Validators.required, Validators.maxLength(50)]],
+            zip: ['', [Validators.required, Validators.maxLength(50)]],
+            phoneNumber: ['', [Validators.required, Validators.maxLength(20)]],
+            website: ['', [Validators.required, Validators.maxLength(50)]],
+            legalDocs: this._formBuilder.array([], [Validators.required, Validators.minLength(1),
+                 Validators.maxLength(this.MAX_DOC_COUNT)])
         });
         this.addFileInputField();
 
@@ -227,7 +284,6 @@ export class AccountSetupComponent implements OnInit {
         // Add the file input form group to the legalDocs form array
         legalDocsFormArray.push(fileInputGroup);
 
-        let test = this.legalDocumentForm.get('legalDocs')['controls'];
 
         // Mark for check
         this._changeDetectorRef.markForCheck();
@@ -260,7 +316,7 @@ export class AccountSetupComponent implements OnInit {
             return;
         }
 
-        const allowedTypes = ['text/plain', 'text/rtf', 'application/rtf', 'text/html', 'application/pdf', 'application/msword',
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/tiff', 'application/pdf', 'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
         const file = fileList[0];
 
@@ -291,8 +347,32 @@ export class AccountSetupComponent implements OnInit {
      * On legal document forms submit
      */
      onDocSubmit(): void {
-         console.log(this.legalDocumentForm.value);
-         console.log(this.legalDocumentForm);
+
+        if(this.legalDocumentForm.invalid) {
+            this.legalDocumentForm.markAllAsTouched();
+            return;
+        }
+
+        this.showAlert = false;
+         
+         this._accountVerificationService.sendVerificationRequest(this.legalDocumentForm.value)
+         .pipe(take(1)).subscribe((resp) => {
+             this.showAlert = true;
+             this.verificatonStatus = null;
+             if(resp) {
+                this.alert = {
+                    type: resp.type,
+                    message: resp.message
+                };
+                this.stepper.next();
+             }
+             else {
+                this.alert = {
+                    type: 'error',
+                    message: "Something went wrong, please try again."
+                };
+             }
+         });
      }
 
      /**

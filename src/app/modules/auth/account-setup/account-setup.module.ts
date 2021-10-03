@@ -1,3 +1,4 @@
+import { FuseAlertModule } from './../../../../@fuse/components/alert/alert.module';
 import { FuseCardModule } from '@fuse/components/card';
 import { AccountSetupComponent } from './account-setup.component';
 import { NgModule } from '@angular/core';
@@ -36,7 +37,8 @@ export const routes: Route[] = [
         MatStepperModule,
         SharedModule,
         MatListModule,
-        FuseCardModule
+        FuseCardModule,
+        FuseAlertModule
     ]
 })
 export class AccountSetupModule

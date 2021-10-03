@@ -22,19 +22,30 @@
             <!-- Stepper -->
             <div class="mb-8 text-3xl">Submit legal documents, get verified and add billing information</div>
 
+             <!-- Alert -->
+             <div>
+                <fuse-alert class="mt-8 -mb-4" *ngIf="showAlert" [appearance]="'outline'"
+                    [dismissible]="true"
+                    [showIcon]="false" [type]="alert.type" [@shake]="alert.type === 'error'">
+                    <div class="text-lg" [innerHTML]="alert.message"></div>
+                </fuse-alert>
+             </div>
+
 
             <div class="p-4 bg-card shadow rounded overflow-hidden">
                 <mat-stepper [orientation]="stepperOrientation" linear #stepper>
-                    <mat-step [stepControl]="legalDocumentForm" [completed]="true">
-                        <form [formGroup]="legalDocumentForm" class="mt-4">
+                    <mat-step [stepControl]="legalDocumentForm"
+                     [editable]="'false'"
+                     [completed]="(verificatonStatus !== null && (verificatonStatus?.isApproved == false))? 'false': 'true'">
+                        <form [formGroup]="legalDocumentForm" class="mt-4" #legalDocumentNgForm="ngForm">
                             <ng-template matStepLabel>Document upload</ng-template>
                             <!-- ID type -->
                             <mat-form-field class="w-full">
                                 <mat-label>Type of government issued ID</mat-label>
                                 <mat-select [formControlName]="'identityDocType'">
-                                    <mat-option value="1">National ID Card</mat-option>
+                                    <mat-option value="0">National ID Card</mat-option>
                                     <mat-option value="2">Passport</mat-option>
-                                    <mat-option value="3">Driver's Lincense</mat-option>
+                                    <mat-option value="1">Driver's Lincense</mat-option>
                                 </mat-select>
                             </mat-form-field>
 
@@ -42,7 +53,8 @@
                             <mat-form-field class="w-full">
                                 <mat-label>ID number</mat-label>
                                 <input matInput type="text" [formControlName]="'identityNumber'">
-                                <mat-error *ngIf="legalDocumentForm.get('identityNumber').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('identityNumber').hasError('required') && 
+                                    (legalDocumentForm.get('identityNumber').touched || legalDocumentForm.get('identityNumber').dirty || legalDocumentNgForm.submitted)">
                                     ID number is required
                                 </mat-error>
                             </mat-form-field>
@@ -52,6 +64,7 @@
                                 <mat-label>ID picture</mat-label>
                                 <input type="text" matInput [formControlName]="'identityDocFileName'"
                                 [placeholder]="'Choose an image'" [errorStateMatcher]="IDInputErrorMatcher" readonly>
+                                <mat-hint>Please upload an image of you holding your ID, make sure that your name, ID number is clearly visible.</mat-hint>
                                 
                                 <div matSuffix>
                                     <input id="image-file-input"
@@ -65,13 +78,18 @@
                                         <mat-icon [svgIcon]="'heroicons_outline:photograph'"></mat-icon>
                                     </label>
                                 </div>
-                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('required') &&
+                                 (legalDocumentForm.get('identityDocFileName').dirty || legalDocumentForm.get('identityDocFileName').touched || legalDocumentNgForm.submitted)">
                                     ID picture is required
                                 </mat-error>
-                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('notAllowed')">
+
+                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('notAllowed') && 
+                                    (legalDocumentForm.get('identityDocFileName').dirty || legalDocumentForm.get('identityDocFileName').touched)">
                                     Allowed file extensions are [.jpg, .jpeg, .png, .gif, .tiff]
                                 </mat-error>
-                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('fileSizeLimitExceeded')">
+
+                                <mat-error *ngIf="legalDocumentForm.get('identityDocFileName').hasError('fileSizeLimitExceeded') && 
+                                    (legalDocumentForm.get('identityDocFileName').dirty || legalDocumentForm.get('identityDocFileName').touched)">
                                     The ID picture file size should not exceed 5 MB
                                 </mat-error>
                             </mat-form-field>
@@ -80,7 +98,8 @@
                             <mat-form-field class="w-full">
                                 <mat-label>Legal business name</mat-label>
                                 <input matInput type="text" [formControlName]="'businessName'">
-                                <mat-error *ngIf="legalDocumentForm.get('businessName').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('businessName').hasError('required') && 
+                                    (legalDocumentForm.get('businessName').dirty || legalDocumentForm.get('businessName').touched)">
                                     Business name is required
                                 </mat-error>
                             </mat-form-field>
@@ -89,7 +108,8 @@
                             <mat-form-field class="w-full">
                                 <mat-label>Address line 1</mat-label>
                                 <input matInput type="text" [formControlName]="'businessAddress1'">
-                                <mat-error *ngIf="legalDocumentForm.get('businessAddress1').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('businessAddress1').hasError('required') && 
+                                    (legalDocumentForm.get('businessAddress1').dirty || legalDocumentForm.get('businessAddress1').touched)">
                                     Address line 1 is required
                                 </mat-error>
                             </mat-form-field>
@@ -98,7 +118,8 @@
                             <mat-form-field class="w-full">
                                 <mat-label>Address line 2</mat-label>
                                 <input matInput type="text" [formControlName]="'businessAddress2'">
-                                <mat-error *ngIf="legalDocumentForm.get('businessAddress2').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('businessAddress2').hasError('required') && 
+                                    (legalDocumentForm.get('businessAddress2').dirty || legalDocumentForm.get('businessAddress2').touched)">
                                     Address line 2 is required
                                 </mat-error>
                             </mat-form-field>
@@ -117,7 +138,8 @@
                                 <mat-form-field class="w-full">
                                     <mat-label>State</mat-label>
                                     <input matInput type="text" [formControlName]="'state'">
-                                    <mat-error *ngIf="legalDocumentForm.get('state').hasError('required')">
+                                    <mat-error *ngIf="legalDocumentForm.get('state').hasError('required') && 
+                                        (legalDocumentForm.get('state').dirty || legalDocumentForm.get('state').touched)">
                                         State is required
                                     </mat-error>
                                 </mat-form-field>
@@ -128,7 +150,8 @@
                                 <mat-form-field class="mr-2 w-full">
                                     <mat-label>City</mat-label>
                                     <input matInput type="text" [formControlName]="'city'">
-                                    <mat-error *ngIf="legalDocumentForm.get('city').hasError('required')">
+                                    <mat-error *ngIf="legalDocumentForm.get('city').hasError('required') && 
+                                        (legalDocumentForm.get('city').dirty || legalDocumentForm.get('city').touched)">
                                         City is required
                                     </mat-error>
                                 </mat-form-field>
@@ -136,7 +159,8 @@
                                 <mat-form-field class="w-full">
                                     <mat-label>Zip</mat-label>
                                     <input matInput type="text" [formControlName]="'zip'">
-                                    <mat-error *ngIf="legalDocumentForm.get('zip').hasError('required')">
+                                    <mat-error *ngIf="legalDocumentForm.get('zip').hasError('required')  
+                                        && (legalDocumentForm.get('zip').dirty || legalDocumentForm.get('zip').touched)">
                                         Zip is required
                                     </mat-error>
                                 </mat-form-field>
@@ -147,7 +171,8 @@
                                 <mat-label>Business phone number</mat-label>
                                 <input matInput type="tel" [formControlName]="'phoneNumber'">
                                 <span matPrefix>{{phonePrefix}}</span>
-                                <mat-error *ngIf="legalDocumentForm.get('phoneNumber').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('phoneNumber').hasError('required') && 
+                                    (legalDocumentForm.get('phoneNumber').dirty || legalDocumentForm.get('phoneNumber').touched)">
                                     Business phone number is required
                                 </mat-error>
                             </mat-form-field>
@@ -157,7 +182,8 @@
                                 <mat-label>Business website</mat-label>
                                 <input matInput type="text" [formControlName]="'website'">
                                 <span matPrefix>https://</span>
-                                <mat-error *ngIf="legalDocumentForm.get('website').hasError('required')">
+                                <mat-error *ngIf="legalDocumentForm.get('website').hasError('required') && 
+                                (legalDocumentForm.get('website').dirty || legalDocumentForm.get('website').touched)">
                                     Business website is required
                                 </mat-error>
                             </mat-form-field>
@@ -165,7 +191,7 @@
                             <!-- Company document -->
                             <div>
                                 <mat-label>Company documents</mat-label>
-                                <div class="text-sm pt-2">We accept text, pdf, word and excel files. The following documents are accepted: </div>
+                                <div class="text-sm pt-2">We accept image, pdf, word and excel files. The following documents are accepted: </div>
                                 <mat-list class="mb-10 pt-0">
                                     <mat-list-item class="text-sm h-auto" role="listitem">
                                         <mat-icon mat-list-icon>keyboard_arrow_right</mat-icon> License document
@@ -194,7 +220,7 @@
                                                 <input id="document-file-input-{{idx}}"
                                                     class="absolute h-0 w-0 opacity-0 invisible pointer-events-none"
                                                     type="file" [multiple]="false"
-                                                    [accept]="'.txt, .rtf, .pdf, .doc, .docx, .xls, .xlsx'"
+                                                    [accept]="'.png, .jpg, .jpeg, .gif, .tiff, .pdf, .doc, .docx, .xls, .xlsx'"
                                                     (change)="uploadDocument($event.target.files, doc)">
                                                 <label
                                                     class="flex items-center justify-center w-10 h-10 rounded-full cursor-pointer hover:bg-gray-400 hover:bg-opacity-20 dark:hover:bg-black dark:hover:bg-opacity-5"
@@ -243,26 +269,21 @@
                                     document</span>
                             </div>
                             <div>
-                                <button mat-raised-button (click)="onDocSubmit()" matStepperNext>Next</button>
+                                <button [disabled]="legalDocumentForm.invalid" mat-button (click)="onDocSubmit()">Next</button>
                             </div>
                         </form>
                     </mat-step>
 
-                    <mat-step [completed]="true">
+                    <mat-step  [editable]="'false'" [completed]="verificatonStatus?.isApproved === true">
                         <ng-template matStepLabel>Approval</ng-template>
-                        <p class="my-4">Your documents will be reviewed by our team and will be approved/rejected. It may take upto three business days. You will be notified in email.</p>
-                        <fuse-card class="flex flex-col px-8 py-6 pb-4 my-2">
-                            <div class="text-lg font-bold">Success</div>
-                            <div class="mt-2">
-                                Congratulations! Your documents have been verified successfully.
-                            </div>
-                        </fuse-card>  
+                        <p *ngIf="verificatonStatus?.isApproved === null" class="my-4">Your documents will be reviewed by our team and
+                             will be approved/rejected. It may take upto three business days. You will be notified in email.</p>  
                         
-                        <fuse-card class="flex flex-col px-8 py-6 pb-4 my-2" #fuseCard>
+                    <fuse-card *ngIf="verificatonStatus?.isApproved === false"
+                        class="flex flex-col px-8 py-6 pb-4 my-2" #fuseCard>
                         <div class="text-lg font-bold text-warn">Warning</div>
                         <div class="mt-2">
-                            We weren’t able to verify your identity due to the quality of your photo.
-                            Please take another photo of you holding your official ID, and make sure it’s from our list of supported documents.
+                            We weren’t able to verify your information. Please move to the previous step and resubmit.
                         </div>
                         <div class="mt-3 -mx-3">
                             <button
@@ -284,24 +305,26 @@
                     
                         <!-- Expansion -->
                         <ng-container fuseCardExpansion>
-                            <div class="my-2">
-                                <mat-list role="list">
-                                    <mat-list-item role="listitem">
-                                        <mat-icon svgIcon="heroicons_outline:duplicate" mat-list-icon></mat-icon>
-                                        <div mat-line>Make sure the photo is clear and sharp</div>
-                                        <div mat-line>Good lighting</div>
-                                        <div mat-line>Make sure the ID isn’t cut off and your full ID is in the frame</div>
-                                    </mat-list-item>
-                                  </mat-list>
+                            <div class="my-2" [innerHTML]="verificatonStatus?.approverMessage">
                             </div>
                         </ng-container>
-                    </fuse-card>                        
+                    </fuse-card> 
+                    
+                    <!-- Document verification status -->
+                    <fuse-card *ngIf="verificatonStatus?.isApproved === true" 
+                        class="flex flex-col px-8 py-6 pb-4 my-2">
+                        <div class="text-lg font-bold text-green-500">Success</div>
+                        <div class="mt-2 ">
+                            Congratulations! Your documents have been verified successfully.
+                        </div>                                
+                    </fuse-card>                           
+                    
                         <div>
-                            <button mat-raised-button matStepperNext>Next</button>
+                            <button [disabled]="verificatonStatus?.isApproved !== true" mat-button matStepperNext>Next</button>
                         </div>
                     </mat-step>
 
-                    <mat-step [completed] = "true">
+                    <mat-step [completed] = "false">
                         <ng-template matStepLabel>Plan and billing</ng-template>
                         <div class="w-full max-w-3xl">
 

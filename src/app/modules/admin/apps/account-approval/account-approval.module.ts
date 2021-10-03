@@ -26,7 +26,7 @@ import { AccountApprovalListComponent } from 'app/modules/admin/apps/account-app
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { QuillModule } from 'ngx-quill';
 import { FuseConfirmationModule } from '@fuse/services/confirmation';
-import { PdfViewerModule } from 'ng2-pdf-viewer';
+import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 
 @NgModule({
     declarations: [
@@ -57,7 +57,7 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
         MatPaginatorModule,
         QuillModule.forRoot(),
         FuseConfirmationModule,
-        PdfViewerModule
+        NgxExtendedPdfViewerModule
     ],
     providers   : [
         {

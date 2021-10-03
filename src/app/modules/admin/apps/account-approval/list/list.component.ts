@@ -1,18 +1,18 @@
+import { environment } from 'environments/environment';
 import { IdPictureInputErrorMatcher } from './../../../../auth/account-setup/file-input-error-matcher';
-import { Pagination } from './../account-approval.types';
+import { Pagination } from '../../../../../core/account-approval/account-approval.types';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnDestroy, OnInit, ViewChild, ViewEncapsulation, AfterViewInit } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 import { MatDrawer, MatDrawerContainer } from '@angular/material/sidenav';
-import { fromEvent, Observable, of, Subject } from 'rxjs';
-import { filter, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, BehaviorSubject } from 'rxjs';
+import { filter, switchMap, take, takeUntil } from 'rxjs/operators';
 import { FuseMediaWatcherService } from '@fuse/services/media-watcher';
-import { AccountApproval, Country } from 'app/modules/admin/apps/account-approval/account-approval.types';
-import { AccountApprovalService } from 'app/modules/admin/apps/account-approval/account-approval.service';
+import {  Country } from 'app/core/account-approval/account-approval.types';
+import { AccountApprovalService } from 'app/core/account-approval/account-approval.service';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
-import { MatDateRangeInput, MatDateRangePicker, MatStartDate } from '@angular/material/datepicker';
-import { MatSelect } from '@angular/material/select';
+import  * as signalR from '@microsoft/signalr';
 
 @Component({
     selector: 'account-approval-list',
@@ -25,14 +25,14 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
     @ViewChild('matDrawer', { static: true }) matDrawer: MatDrawer;
     @ViewChild(MatPaginator) private _paginator: MatPaginator;
 
-    accountApproval$: Observable<AccountApproval[]>;
+    accountApprovals: any[];
 
     accountApprovalCount: number = 0;
     accountApprovalTableColumns: string[] = ['name', 'email', 'phoneNumber', 'job'];
     countries: Country[];
     drawerMode: 'side' | 'over';
     searchInputControl: FormControl = new FormControl();
-    selectedAccountApproval: AccountApproval;
+    selectedAccountApproval: any;
     private _unsubscribeAll: Subject<any> = new Subject<any>();
     calSettings: any =
         {
@@ -47,6 +47,8 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
     });
     isLoading: boolean = true;
     activeFilters: string[] = ['showAll'];
+    hubConnect: signalR.HubConnection;
+    realtimeApprovalRequests: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
 
     /**
      * Constructor
@@ -70,14 +72,16 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
      */
     ngOnInit(): void {
         // Get the account-approval
-        //this.accountApproval$ = this._accountApprovalsService.accountApproval$;
-        this._accountApprovalsService.accountApproval$
+        this._accountApprovalsService.getAccountApprovals(
+            this.getFilterModel(0, 5)
+        ).pipe(take(1)).subscribe();
+
+        this._accountApprovalsService.accountApprovals$
             .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((accountApproval: AccountApproval[]) => {
-                accountApproval = accountApproval.slice(0, 10);
-                this.accountApproval$ = of(accountApproval);
+            .subscribe((accountApproval: any) => {
+                this.accountApprovals = accountApproval.businessVerificationRequests;
                 // Update the counts
-                this.accountApprovalCount = accountApproval.length;
+                this.accountApprovalCount = accountApproval.count;
 
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
@@ -87,9 +91,9 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
             });
 
         // Get the AccountApproval
-        this._accountApprovalsService.AccountApproval$
+        this._accountApprovalsService.selectedAccountApproval$
             .pipe(takeUntil(this._unsubscribeAll),)
-            .subscribe((AccountApproval: AccountApproval) => {
+            .subscribe((AccountApproval: any) => {
 
                 // Update the selected AccountApproval
                 this.selectedAccountApproval = AccountApproval;
@@ -109,18 +113,6 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
             });
-
-        // Subscribe to search input field value changes
-        this.searchInputControl.valueChanges
-            .pipe(
-                takeUntil(this._unsubscribeAll),
-                switchMap(query =>
-
-                    // Search
-                    this._accountApprovalsService.searchAccountApprovals(query)
-                )
-            )
-            .subscribe();
 
         // Subscribe to MatDrawer opened change
         this.matDrawer.openedChange.subscribe((opened) => {
@@ -150,22 +142,9 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
                 this._changeDetectorRef.markForCheck();
             });
 
-        // Listen for shortcuts
-        fromEvent(this._document, 'keydown')
-            .pipe(
-                takeUntil(this._unsubscribeAll),
-                filter<KeyboardEvent>(event =>
-                    (event.ctrlKey === true || event.metaKey) // Ctrl or Cmd
-                    && (event.key === '/') // '/'
-                )
-            )
-            .subscribe(() => {
-                this.createAccountApproval();
-            });
 
 
         //Pagination
-        // Get the pagination
         this._accountApprovalsService.pagination$
             .pipe(takeUntil(this._unsubscribeAll))
             .subscribe((pagination: Pagination) => {
@@ -173,9 +152,22 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
                 // Update the pagination
                 this.pagination = pagination;
 
+                if(this._paginator) {
+                    this._paginator.pageIndex = pagination.startIndex;
+                    this._paginator.length = pagination.length;
+                    this._paginator.pageSize = pagination.size;
+                }
+                
+
                 // Mark for check
                 this._changeDetectorRef.markForCheck();
             });
+
+        //Manage signalR connection
+        this.manageHubConnection();    
+
+        //Reset realtime requests
+        this.realtimeApprovalRequests.next([]);
 
     }
 
@@ -211,19 +203,33 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
     }
 
     /**
-     * Create AccountApproval
+     * Get filter model
      */
-    createAccountApproval(): void {
-        // Create the AccountApproval
-        this._accountApprovalsService.createAccountApproval().subscribe((newContact) => {
+    getFilterModel(pageNo: number, entryPerPage: number): any {
+        const model = {
+            approverId: 0,
+            startDate:  this.range.get('start').value,
+            endDate: this.range.get('end').value,
+            pageNo: pageNo,
+            enteryPerPage: entryPerPage,
+            filters: this.activeFilters.map((val) => {
+                switch(val) {
+                    case 'showAll': return 0;
+                    case 'pending': return 1;
+                    case 'approved': return 2;
+                    case 'rejected': return 3;
+                    case 'read': return 4;
+                    case 'unread': return 5;
+                    default: return 0;
+                }
+            })
+        };
 
-            // Go to the new AccountApproval
-            this._router.navigate(['./', newContact.id], { relativeTo: this._activatedRoute });
+        localStorage.setItem('accountApprovalFilter', JSON.stringify(model));
 
-            // Mark for check
-            this._changeDetectorRef.markForCheck();
-        });
+        return model;
     }
+
 
     /**
      * 
@@ -231,20 +237,12 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
      */
     paginate(event: PageEvent): void {
         this.isLoading = true;
-        this._accountApprovalsService.accountApproval$
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((accountApproval: AccountApproval[]) => {
-                accountApproval = accountApproval.slice(event.pageIndex * event.pageSize,
-                    Math.min(event.pageIndex * event.pageSize + event.pageSize, accountApproval.length));
-                this.accountApproval$ = of(accountApproval);
-
-                // Mark for check
-                this._changeDetectorRef.markForCheck();
-
+        this._accountApprovalsService.getAccountApprovals(
+            this.getFilterModel(event.pageIndex, event.pageSize)
+        ).pipe(take(1)).subscribe((accountApproval: any[]) => {
                 //Set loading status
                 this.isLoading = false;
-            });
-
+        });
     }
 
     /**
@@ -252,48 +250,18 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
      * Filter requests
      */
     filter(event: any): void {
+        this.resetDateRange();
         if(this.activeFilters.includes('showAll')) {
             this.activeFilters = ['showAll'];
         }
 
-        this._accountApprovalsService.accountApproval$
-            .pipe(takeUntil(this._unsubscribeAll))
-            .subscribe((accountApprovals: AccountApproval[]) => {
-                if(!this.activeFilters.includes('showAll')) {
-                    let filteredApprovals: AccountApproval[] = [];
-                    this.activeFilters.forEach(field => {
-                        switch(field) 
-                        {
-                            case 'approved': filteredApprovals = filteredApprovals.concat(accountApprovals.filter(obj => obj.status === 'approved'));
-                                break;
-                            case 'pending': filteredApprovals = filteredApprovals.concat(accountApprovals.filter(obj => obj.status === 'pending'));
-                                break;
-                            case 'rejected': filteredApprovals = filteredApprovals.concat(accountApprovals.filter(obj => obj.status === 'rejected'));
-                                break;
-                            case 'read': filteredApprovals = filteredApprovals.concat(accountApprovals.filter(obj => obj.readStatus === 'read'));
-                                break;
-                            case 'unread': filteredApprovals = filteredApprovals.concat(accountApprovals.filter(obj => obj.readStatus === 'unread'));
-                                break;
-                            default: break;
-                        }
-                    });
-                    //Select distinct approvals by comparing id property
-                    accountApprovals = filteredApprovals.reduce((distinctApporvals, approval) => {
-                        if(!distinctApporvals.some(appr => appr.id === approval.id)) {
-                            distinctApporvals.push(approval);
-                        }
-                        return distinctApporvals;
-                    }, []);
-                }
-
-                this.accountApproval$ = of(accountApprovals);
-                this._paginator.pageIndex = 0;
-                this._paginator.length = accountApprovals.length;
-                this.resetDateRange();
-
-                // Mark for check
-                this._changeDetectorRef.markForCheck();
-            });
+        this.isLoading = true;
+        this._accountApprovalsService.getAccountApprovals(
+            this.getFilterModel(0, 5)
+        ).pipe(take(1)).subscribe((accountApproval: any[]) => {
+                //Set loading status
+                this.isLoading = false;
+        });
     }
 
     /**
@@ -309,21 +277,12 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
      */
     dateRangeChange(dateRangeStart: HTMLInputElement, dateRangeEnd: HTMLInputElement) {
         if (dateRangeStart.value && dateRangeEnd.value) {
-            const start = new Date(dateRangeStart.value),
-                end = new Date(dateRangeEnd.value);
-
-            this._accountApprovalsService.accountApproval$
-                .pipe(takeUntil(this._unsubscribeAll))
-                .subscribe((accountApprovals: AccountApproval[]) => {
-                    accountApprovals = accountApprovals.filter(aa => new Date(aa.createdDate) >= start 
-                        && new Date(aa.createdDate) <= end);
-
-                    this.accountApproval$ = of(accountApprovals);
-                    this._paginator.pageIndex = 0;
-                    this._paginator.length = accountApprovals.length;
-
-                    // Mark for check
-                    this._changeDetectorRef.markForCheck();
+                this.isLoading = true;
+                this._accountApprovalsService.getAccountApprovals(
+                    this.getFilterModel(0, this.pagination?.size ? this.pagination.size: 5)
+                ).pipe(take(1)).subscribe((accountApproval: any) => {
+                        //Set loading status
+                        this.isLoading = false;
                 });
         }
 
@@ -335,6 +294,54 @@ export class AccountApprovalListComponent implements OnInit, AfterViewInit, OnDe
     resetDateRange():void {
         this.range.get('start').setValue('');
         this.range.get('end').setValue('');
+
+        this.isLoading = true;
+        this._accountApprovalsService.getAccountApprovals(
+            this.getFilterModel(0, this.pagination?.size ? this.pagination.size: 5)
+        ).pipe(take(1)).subscribe((accountApproval: any) => {
+            //Set loading status
+            this.isLoading = false;
+        });        
+    }
+
+    /**
+     * Detect changes
+     */
+    detectChanges(): void {
+        this._changeDetectorRef.markForCheck();
+    }
+
+
+    /**
+     * Manage SignalR hub connection
+     */
+    manageHubConnection(): void {
+        if(!this.hubConnect) {
+            this.hubConnect = new signalR.HubConnectionBuilder()
+                .configureLogging(signalR.LogLevel.Debug)
+                .withUrl(`${environment.ApiRoot}/approvalNotificationHub`, {
+                    accessTokenFactory: () => localStorage.getItem('accessToken')
+                }).build();
+
+            this.hubConnect.on('newApprovalReqest', (newRequest: any) => {
+                let realtimeRequests = this.realtimeApprovalRequests.getValue();
+                realtimeRequests = realtimeRequests.filter(r => r.id !== newRequest.id);
+                this.realtimeApprovalRequests.next([...realtimeRequests, newRequest]);
+
+                //If request retried, remove it from list.
+                const idx = this.accountApprovals.findIndex(aa => aa.id === newRequest.id);
+                if(idx !== -1) {
+                    this.accountApprovals.splice(idx, 1);
+                }
+            });
+        }
+
+        this.hubConnect.start().then(() => {
+            console.log('signalR connection established');
+        }).catch((err) => {
+            console.log('signalR connection error occurred');
+            console.log(err);
+        })
     }
 
     /**
